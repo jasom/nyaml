@@ -311,7 +311,7 @@
 		       (assert (not (find-rule (car item))))
 		       (add-rule (car item) (make-instance 'rule
 							   :expression `(function ,(car item))))
-		       (trace-rule (car item) :recursive t))
+		       #+nyaml-trace(trace-rule (car item) :recursive t))
 		  (multiple-value-bind (production position result)
 		      (esrap:parse
 		       (flet ((prule (&rest ignoreme)
@@ -362,7 +362,10 @@
   `(or ,(prule 's-indent n) ,(prule 's-indent-< n))
  (:text t))
 
-(defrule s-separate-in-line (+ s-white))
+(defrule s-separate-in-line
+    (or
+     (+ s-white)
+     (function start-of-line)))
 
 ;; rule 68
 (define-parameterized-rule s-block-line-prefix (n)
@@ -435,13 +438,30 @@
 	 (? c-nb-comment-text)
 	 b-comment))
 
-(defun start-of-line (input position end)
-  (declare (ignore end))
-  (if (or (= position 0)
-	  (char= (elt input (1- position)) #\Newline)
-	  (char= (elt input (1- position)) #\Return))
-      (values "" position t)
-      (values nil position)))
+;; l-comment consumes no characters at EOF
+;; so we need to handle that situation for *
+;; and + productions to not infinite loop
+(defrule l-comment-*
+    (or
+     l-comment-+
+     (and)))
+
+(defrule l-comment-+
+    (or
+     eof
+     (and
+      l-comment
+      l-comment-+)
+     l-comment))
+
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defun start-of-line (input position end)
+    (declare (ignore end))
+    (if (or (= position 0)
+	    (char= (elt input (1- position)) #\Newline)
+	    (char= (elt input (1- position)) #\Return))
+	(values "" position t)
+	(values nil position))))
 
 (defrule start-of-line
   (function start-of-line ))
@@ -450,7 +470,7 @@
 (defrule s-l-comments
     (and
      (or s-b-comment start-of-line)
-     (* l-comment)))
+     l-comment-*))
 
 ;; rule 81
 (define-parameterized-rule s-separate-lines (n)
@@ -471,7 +491,9 @@
 	 (or ns-yaml-directive
 	     ns-tag-directive
 	     ns-reserved-directive)
-	 s-l-comments))
+	 s-l-comments)
+  (:lambda (x)
+    `(directive ,(second x))))
 
 ;; rule 83
 (defrule ns-reserved-directive
@@ -492,7 +514,8 @@
 (defrule ns-yaml-directive
     (and "YAML"
 	 s-separate-in-line
-	 ns-yaml-version))
+	 ns-yaml-version)
+  (:text t))
 
 ;; rule 87
 (defrule ns-yaml-version
@@ -504,7 +527,8 @@
     (when (or (> (parse-integer (text (first production))) 1)
 	      (> (parse-integer (text (third production))) 2))
       (funcall *warning* "YAML version declared: ~A newer than 1.2"
-	       (text production)))))
+	       (text production)))
+    (text production)))
 	
 ;; rule 88
 (defrule ns-tag-directive
@@ -1105,7 +1129,6 @@
 
 ;; rule 163
 (defrule indent-level-helper (and b-break (* s-space) (! b-break)))
-(trace-rule 'indent-level-helper)
 
 (defun detect-indentation-level (input start end)
   (loop
@@ -1180,7 +1203,7 @@
     ,(prule 's-indent-<= n)
     c-nb-comment-text
     b-comment
-    (* l-comment)))
+    l-comment-*))
 
 ;;rule 170
 (defun block-header-then (input start end n next)
@@ -1430,7 +1453,9 @@
     ,(prule 'ns-l-block-map-entry n)
     (*
      (and ,(prule 's-indent n)
-	  ,(prule 'ns-l-block-map-entry n)))))
+	  ,(prule 'ns-l-block-map-entry n))))
+  (:lambda (x)
+    `(map ,(car x) ,@(mapcar #'second (cadr x)))))
 
 ;; rule 196
 (define-parameterized-rule s-l+block-node (n c)
@@ -1486,3 +1511,126 @@
   (if (eql c 'block-out)
       (1- n)
       n))
+
+;; rule 202
+(defrule l-document-prefix
+    (or
+     (and
+      c-byte-order-mark
+      l-comment-*)
+     l-comment-+)
+  (:constant nil))
+
+;; rule 203
+(defrule c-directives-end "---")
+
+;; rule 204
+(defrule c-document-end "...")
+
+;; rule 205
+(defrule l-document-suffix (and c-document-end s-l-comments))
+
+;; rule 206
+(defrule c-forbidden
+    (and
+     (function start-of-line)
+     (or c-directives-end c-document-end)
+     (or b-char s-white eof)))
+
+;;rule 207
+(defun find-next-forbidden (input position end)
+  ;; This is slow, but simple
+  (loop for i from position below end
+     when (nth-value 2 (esrap:parse 'c-forbidden input
+				    :start i
+				    :end end
+				    :junk-allowed t))
+     return i
+     finally (return end)))
+       
+(defun bare-doc-start (i p e)
+  (let* ((end (find-next-forbidden i p e))
+	 (result (multiple-value-list
+		  (s-l+block-node i p end -1 'block-in))))
+    (when (null (second result))
+      (setf (second result) end))
+    (values-list result)))
+
+(defrule l-bare-document
+    (function bare-doc-start)
+  (:lambda (x)
+    (list nil x)))
+
+;;rule 208
+(defrule l-explicit-document
+    (and c-directives-end
+	 (or l-bare-document
+	     (and e-node s-l-comments)))
+  (:function second))
+
+;;rule 209
+(defrule l-directive-document
+    (and
+     (+ l-directive)
+     l-explicit-document)
+  (:destructure (directives document)
+	;; strip off the dummy directive from
+	;; the bare document
+	(list directives (second document))))
+
+;;rule 210
+(defrule l-any-document
+    (or l-directive-document
+	l-explicit-document
+	l-bare-document))
+
+;; rule 211
+(defrule l-document-prefix-*
+    (or
+     l-document-prefix-+
+     (and)))
+
+(defrule l-document-prefix-+
+    (or
+     eof
+     (and
+      l-document-prefix
+      l-document-prefix-+)
+     l-document-prefix))
+
+(defun l-yaml-stream-helper (input position end)
+  (let (prod new-pos result)
+    (loop
+	do (setf (values prod new-pos result)
+	       (esrap:parse
+		'(or
+		  (and
+		   (+ l-document-suffix)
+		   l-document-prefix-*
+		   (? l-any-document))
+		  (and 
+		   l-document-prefix-*
+		   (and)
+		   l-explicit-document)
+		  l-document-prefix-+)
+		input
+		:start position
+		:end end
+		:junk-allowed t))
+       collect prod into total
+       when (or (null new-pos)
+		(= new-pos position))
+       return (values total new-pos result)
+       do (setf position new-pos))))
+
+
+(defrule l-yaml-stream
+    (and
+     l-document-prefix-+
+     (? l-any-document)
+     (function l-yaml-stream-helper))
+  (:lambda (x)
+    `(documents
+      ,(second x)
+      ,@(mapcar #'third (third x)))))
+	
