@@ -32,7 +32,7 @@
 (defrule c-mapping-key #\?)
 
 ;; rule 6
-(defrule c-maping-value #\:)
+(defrule c-mapping-value #\:)
 
 ;; rule 7
 (defrule c-collect-entry #\,)
@@ -71,7 +71,7 @@
 (defrule c-single-quote #\')
 
 ;; rule 19
-(defrule c-double-quote #\')
+(defrule c-double-quote #\")
 
 ;;rule 20
 (defrule c-directive #\%)
@@ -297,7 +297,7 @@
 	    (let ((pcalls2))
 	      (flet ((prule (name &rest args)
 			   #+debug(format t "~&PRULE: ~A~%" name)
-			   (push `(,(gensym (string name)) ,name ,@args) pcalls2)))
+			   (push `(,(gensym (format nil "~a-~{~a-~}" name args)) ,name ,@args) pcalls2)))
 		,(car b))
 	      (reverse pcalls2)))
 	   (unbind-me (mapcar #'car pcalls)))
@@ -346,15 +346,18 @@
 
 ;; rule 63
 (define-parameterized-rule s-indent (n)
-  `(and ,@(loop repeat n collect 's-space))
+  (if (non-negative-integer-p n)
+       `(and ,@(loop repeat n collect 's-space))
+       `(or))
  (:text t))
 
 ;; rule 64
 (define-parameterized-rule s-indent-< (n)
   `(or
-    ,@(loop for i from (1- n) downto 1
-	 collect (prule 's-indent i))
-    (& (! 's-space)))
+    ,@(loop for i from (1- n) downto 0
+	 collect `(and ,(prule 's-indent i)
+		       (& (! s-space))))
+    )
   (:text t))
 
 ;; rule 65
@@ -377,16 +380,16 @@
   
 
 ;; rule 67
-(define-parameterized-rule s-line-prefix (n (c 'block-out 'block-in 'flow-out 'flow-in))
+(define-parameterized-rule s-line-prefix (n (c :block-out :block-in :flow-out :flow-in))
   (if
-   (or (eql c 'block-out)
-       (eql c 'block-in))
+   (or (eql c :block-out)
+       (eql c :block-in))
    (prule 's-block-line-prefix n)
    (prule 's-flow-line-prefix  n)))
 
 
 ;; rule 70
-(define-parameterized-rule l-empty (n (c 'block-out 'block-in 'flow-out 'flow-in))
+(define-parameterized-rule l-empty (n (c :block-out :block-in :flow-out :flow-in))
   `(and
     (or ,(prule 's-line-prefix n c)
 	,(prule 's-indent-< n))
@@ -394,7 +397,7 @@
   (:constant #\Newline))
 
 ;; rule 71
-(define-parameterized-rule b-l-trimmed (n (c 'block-out 'block-in 'flow-out 'flow-in))
+(define-parameterized-rule b-l-trimmed (n (c :block-out :block-in :flow-out :flow-in))
   `(and b-non-content
 	(+
 	 ,(prule 'l-empty n c)))
@@ -405,14 +408,14 @@
 (defrule b-as-space b-break (:constant #\Space))
 
 ;; rule 73
-(define-parameterized-rule b-l-folded (n (c 'block-out 'block-in 'flow-out 'flow-in))
+(define-parameterized-rule b-l-folded (n (c :block-out :block-in :flow-out :flow-in))
   `(or ,(prule 'b-l-trimmed n c)
        b-as-space)
   (:text t))
 
 (define-parameterized-rule s-flow-folded (n)
   `(and (? s-separate-in-line)
-	,(prule 'b-l-folded n 'flow-in)
+	,(prule 'b-l-folded n :flow-in)
 	,(prule 's-flow-line-prefix n))
   (:function second))
 
@@ -429,7 +432,7 @@
      (?
       (and
        s-separate-in-line
-       c-nb-comment-text))
+       (? c-nb-comment-text)))
      b-comment))
 
 ;; rule 78
@@ -479,9 +482,9 @@
     s-separate-in-line))
 
 ;; rule 80
-(define-parameterized-rule s-separate (n (c 'block-out 'block-in 'flow-out 'flow-in
-					    'block-key 'flow-key))
-  (if (member c '(block-out block-in flow-out flow-in))
+(define-parameterized-rule s-separate (n (c :block-out :block-in :flow-out :flow-in
+					    :block-key :flow-key))
+  (if (member c '(:block-out :block-in :flow-out :flow-in))
       (prule 's-separate-lines n)
       's-separate-in-line))
 
@@ -573,8 +576,8 @@
      (* ns-uri-char)))
 
 ;; rule 96
-(define-parameterized-rule c-ns-properties (n (c 'block-out 'block-in 'flow-out 'flow-in
-						 'block-key 'flow-key))
+(define-parameterized-rule c-ns-properties (n (c :block-out :block-in :flow-out :flow-in
+						 :block-key :flow-key))
   `(or
     (and
      c-ns-tag-property
@@ -672,15 +675,15 @@
 
 
 ;; rule 110
-(define-parameterized-rule nb-double-text (n (c 'flow-out 'flow-in
-						 'block-key 'flow-key))
-  (if (member c '(flow-out flow-in))
+(define-parameterized-rule nb-double-text (n (c :flow-out :flow-in
+						 :block-key :flow-key))
+  (if (member c '(:flow-out :flow-in))
       (prule 'nb-double-multi-line n)
       'nb-double-one-line))
 
 ;; rule 109
-(define-parameterized-rule c-double-quoted (n (c 'flow-out 'flow-in
-						 'block-key 'flow-key))
+(define-parameterized-rule c-double-quoted (n (c :flow-out :flow-in
+						 :block-key :flow-key))
   `(and #\"
 	,(prule 'nb-double-text n c)
 	#\")
@@ -699,7 +702,7 @@
     (* s-white)
     #\\
     b-non-content
-    (* ,(prule 'l-empty n 'flow-in))
+    (* ,(prule 'l-empty n :flow-in))
     ,(prule 's-flow-line-prefix n)))
 
 ;; rule 113
@@ -725,7 +728,7 @@
      nb-single-char))
 
 ;;rule 120
-(define-parameterized-rule c-single-quoted (n (c 'flow-out 'flow-in 'block-key 'flow-key))
+(define-parameterized-rule c-single-quoted (n (c :flow-out :flow-in :block-key :flow-key))
   `(and
     #\'
     ,(prule 'nb-single-text n c)
@@ -736,8 +739,8 @@
       (text meat))))
 
 ;;rule 121
-(define-parameterized-rule nb-single-text (n (c 'flow-out 'flow-in 'block-key 'flow-key))
-  (if (member c '(flow-out flow-in))
+(define-parameterized-rule nb-single-text (n (c :flow-out :flow-in :block-key :flow-key))
+  (if (member c '(:flow-out :flow-in))
       (prule 'nb-single-multi-line n)
       'nb-single-one-line))
 
@@ -764,12 +767,12 @@
 	(or ,(prule 's-single-next-line n)
 	    (* s-white))))
 
-(define-parameterized-rule ns-plain-safe-follows ((c 'flow-out 'flow-in 'block-key 'flow-key))
+(define-parameterized-rule ns-plain-safe-follows ((c :flow-out :flow-in :block-key :flow-key))
   `(& ,(prule 'ns-plain-safe c))
   (:constant nil))
 
 ;;rule 126
-(define-parameterized-rule ns-plain-first ((c 'flow-out 'flow-in 'block-key 'flow-key))
+(define-parameterized-rule ns-plain-first ((c :flow-out :flow-in :block-key :flow-key))
   `(or
     (and
      (! c-indicator)
@@ -779,8 +782,8 @@
      ,(prule 'ns-plain-safe-follows c))))
 
 ;;rule 127
-(define-parameterized-rule ns-plain-safe ((c 'flow-out 'flow-in 'block-key 'flow-key))
-  (if (member c '(flow-out block-key))
+(define-parameterized-rule ns-plain-safe ((c :flow-out :flow-in :block-key :flow-key))
+  (if (member c '(:flow-out :block-key))
       'ns-plain-safe-out
       'ns-plain-safe-in))
 
@@ -802,7 +805,7 @@
       (values nil position)))
 
 ;;rule 130
-(define-parameterized-rule ns-plain-char ((c 'flow-out 'flow-in 'block-key 'flow-key))
+(define-parameterized-rule ns-plain-char ((c :flow-out :flow-in :block-key :flow-key))
   `(or
     (and
      (! (character-ranges #\: #\#))
@@ -815,33 +818,33 @@
      ,(prule 'ns-plain-safe-follows c))))
 
 ;;rule 131
-(define-parameterized-rule ns-plain (n (c 'flow-out 'flow-in 'block-key 'flow-key))
-  (if (member c '(flow-out flow-in))
+(define-parameterized-rule ns-plain (n (c :flow-out :flow-in :block-key :flow-key))
+  (if (member c '(:flow-out :flow-in))
       (prule 'ns-plain-multi-line n c)
       (prule 'ns-plain-one-line c))
   (:text t))
 
 ;;rule 132
-(define-parameterized-rule nb-ns-plain-in-line ((c 'flow-out 'flow-in 'block-key 'flow-key))
+(define-parameterized-rule nb-ns-plain-in-line ((c :flow-out :flow-in :block-key :flow-key))
   `(*
     (and (* s-white)
 	 ,(prule 'ns-plain-char c))))
 
 ;;rule 133
-(define-parameterized-rule ns-plain-one-line ((c 'flow-out 'flow-in 'block-key 'flow-key))
+(define-parameterized-rule ns-plain-one-line ((c :flow-out :flow-in :block-key :flow-key))
   `(and
     ,(prule 'ns-plain-first c)
     ,(prule 'nb-ns-plain-in-line c)))
 
 ;;rule 134
-(define-parameterized-rule s-ns-plain-next-line (n (c 'flow-out 'flow-in 'block-key 'flow-key))
+(define-parameterized-rule s-ns-plain-next-line (n (c :flow-out :flow-in :block-key :flow-key))
   `(and
     ,(prule 's-flow-folded n)
     ,(prule 'ns-plain-char c)
     ,(prule 'nb-ns-plain-in-line c)))
 
 ;;rule 135
-(define-parameterized-rule ns-plain-multi-line (n (c 'flow-out 'flow-in 'block-key 'flow-key))
+(define-parameterized-rule ns-plain-multi-line (n (c :flow-out :flow-in :block-key :flow-key))
   `(and
     ,(prule 'ns-plain-one-line c)
     (* ,(prule 's-ns-plain-next-line n c))))
@@ -849,13 +852,13 @@
 ;; rule 136
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defun in-flow (c)
-    (if (member c '(flow-out flow-in))
-	'flow-in
-	'flow-key)))
+    (if (member c '(:flow-out :flow-in))
+	:flow-in
+	:flow-key)))
 
 ;; rule 137
-(define-parameterized-rule c-flow-sequence (n (c 'flow-out 'flow-in
-						 'block-key 'flow-key))
+(define-parameterized-rule c-flow-sequence (n (c :flow-out :flow-in
+						 :block-key :flow-key))
   `(and
     #\[
     (? ,(prule 's-separate n c))
@@ -868,8 +871,8 @@
       (cons 'seq meat))))
 
 ;; rule 138
-(define-parameterized-rule ns-s-flow-seq-entries (n (c 'flow-out 'flow-in 
-						 'block-key 'flow-key))
+(define-parameterized-rule ns-s-flow-seq-entries (n (c :flow-out :flow-in 
+						 :block-key :flow-key))
   `(and
     ,(prule 'ns-flow-seq-entry n c)
     (? ,(prule 's-separate n c))
@@ -884,16 +887,16 @@
 	(cons  first (third maybe-more)))))
     
 ;; rule 139
-(define-parameterized-rule ns-flow-seq-entry (n (c 'flow-out 'flow-in 
-						   'block-key 'flow-key))
+(define-parameterized-rule ns-flow-seq-entry (n (c :flow-out :flow-in 
+						   :block-key :flow-key))
   `(or
     ,(prule 'ns-flow-pair n c)
     ,(prule 'ns-flow-node n c)))
 
 
 ;;rule 140
-(define-parameterized-rule c-flow-mapping (n (c 'flow-out 'flow-in 
-						'block-key 'flow-key))
+(define-parameterized-rule c-flow-mapping (n (c :flow-out :flow-in 
+						:block-key :flow-key))
   `(and
     "{"
     (? ,(prule 's-separate n c))
@@ -905,15 +908,15 @@
       (cons 'map meat))))
 
 ;;rule 141
-(define-parameterized-rule ns-s-flow-map-entries (n (c 'flow-out 'flow-in 
-						       'block-key 'flow-key))
+(define-parameterized-rule ns-s-flow-map-entries (n (c :flow-out :flow-in 
+						       :block-key :flow-key))
   `(and
     ,(prule 'ns-flow-map-entry n c)
     (? ,(prule 's-separate n c))
     (?
      (and #\,
-	  ,(prule 's-separate n c)
-	  ,(prule 'ns-s-flow-map-entries n c))))
+	  (? ,(prule 's-separate n c))
+	  (? ,(prule 'ns-s-flow-map-entries n c)))))
   (:lambda (stuff)
     (destructuring-bind
 	  (first _ maybe-more) stuff
@@ -921,8 +924,8 @@
       (cons  first (third maybe-more)))))
 
 ;; rule 142
-(define-parameterized-rule ns-flow-map-entry (n (c 'flow-out 'flow-in 
-						   'block-key 'flow-key))
+(define-parameterized-rule ns-flow-map-entry (n (c :flow-out :flow-in 
+						   :block-key :flow-key))
   `(or
    (and "?"
 	,(prule 's-separate n c)
@@ -930,23 +933,23 @@
    ,(prule 'ns-flow-map-implicit-entry n c)))
 
 ;;rule 143
-(define-parameterized-rule ns-flow-map-explicit-entry (n (c 'flow-out 'flow-in 
-							    'block-key 'flow-key))
+(define-parameterized-rule ns-flow-map-explicit-entry (n (c :flow-out :flow-in 
+							    :block-key :flow-key))
   `(or
     ,(prule 'ns-flow-map-implicit-entry n c)
     (and e-node e-node)))
 
 ;; rule 144
-(define-parameterized-rule ns-flow-map-implicit-entry (n (c 'flow-out 'flow-in 
-							    'block-key 'flow-key))
+(define-parameterized-rule ns-flow-map-implicit-entry (n (c :flow-out :flow-in 
+							    :block-key :flow-key))
   `(or
     ,(prule 'ns-flow-map-yaml-key-entry n c)
     ,(prule 'c-ns-flow-map-empty-key-entry n c)
     ,(prule 'c-ns-flow-map-json-key-entry n c)))
 
 ;; rule 145
-(define-parameterized-rule ns-flow-map-yaml-key-entry (n (c 'flow-out 'flow-in 
-							    'block-key 'flow-key))
+(define-parameterized-rule ns-flow-map-yaml-key-entry (n (c :flow-out :flow-in 
+							    :block-key :flow-key))
   `(and
     ,(prule 'ns-flow-yaml-node n c)
     (or
@@ -962,16 +965,16 @@
 		     (second value))))))
 
 ;;rule 146
-(define-parameterized-rule c-ns-flow-map-empty-key-entry (n (c 'flow-out 'flow-in 
-							       'block-key 'flow-key))
+(define-parameterized-rule c-ns-flow-map-empty-key-entry (n (c :flow-out :flow-in 
+							       :block-key :flow-key))
   `(and e-node
 	,(prule 'c-ns-flow-map-separate-value n c))
   (:lambda (x)
     (cons 'entry x)))
 
 ;; rule 147
-(define-parameterized-rule c-ns-flow-map-separate-value (n (c 'flow-out 'flow-in 
-							      'block-key 'flow-key))
+(define-parameterized-rule c-ns-flow-map-separate-value (n (c :flow-out :flow-in 
+							      :block-key :flow-key))
   `(and
     #\:
     (! ,(prule 'ns-plain-safe-follows c))
@@ -985,8 +988,8 @@
       value)))
 
 ;; rule 148
-(define-parameterized-rule c-ns-flow-map-json-key-entry (n (c 'flow-out 'flow-in 
-							      'block-key 'flow-key))
+(define-parameterized-rule c-ns-flow-map-json-key-entry (n (c :flow-out :flow-in 
+							      :block-key :flow-key))
   `(and
     ,(prule 'c-flow-json-node n c)
     (or
@@ -1000,8 +1003,8 @@
    (list 'entry key value)))
 
 ;; rule 149
-(define-parameterized-rule c-ns-flow-map-adjacent-value (n (c 'flow-out 'flow-in 
-							      'block-key 'flow-key))
+(define-parameterized-rule c-ns-flow-map-adjacent-value (n (c :flow-out :flow-in 
+							      :block-key :flow-key))
   `(and
     #\:
     (or
@@ -1031,14 +1034,14 @@
 
 ;; rule 152
 (define-parameterized-rule ns-flow-pair-yaml-key-entry (n c)
-  `(and ,(prule 'ns-s-implicit-yaml-key 'flow-key)
+  `(and ,(prule 'ns-s-implicit-yaml-key :flow-key)
 
 	,(prule 'c-ns-flow-map-separate-value n c)))
 
 ;; rule 153
 (define-parameterized-rule c-ns-flow-pair-json-key-entry (n c)
   `(and
-    ,(prule 'c-s-implicit-json-key 'flow-key)
+    ,(prule 'c-s-implicit-json-key :flow-key)
     ,(prule 'c-ns-flow-map-adjacent-value n c)))
 
 ;; rule 154
@@ -1135,8 +1138,9 @@
      with prod
      with position
      with result
-     for possible-start = (position-if (rcurry #'member '(#\Newline #\Return)) input
-					  :start start)
+     for possible-start = (if (= start 0) 0 ; Beginning of input is also a start of line
+			      (position-if (rcurry #'member '(#\Newline #\Return)) input
+					   :start (1- start)))
        then (position-if (rcurry #'member '(#\Newline #\Return)) input
 					  :start (1+ possible-start))
        while possible-start
@@ -1194,7 +1198,7 @@
 ;; rule 168
 (define-parameterized-rule l-keep-empty (n)
   `(and
-    (* ,(prule 'l-empty n 'block-in))
+    (* ,(prule 'l-empty n :block-in))
     (? ,(prule 'l-trail-comments n))))
 
 ;;rule 169
@@ -1214,7 +1218,7 @@
 	(values production position result)))
     (let ((m (getf production 'indent))
 	  (tee (getf production 'chomp)))
-      (princ m) (princ tee) (terpri)
+      ;(princ m) (princ tee) (terpri)
       (funcall next input position end (+ n m) tee))))
 
 (define-parameterized-rule c-l+literal (n)
@@ -1226,7 +1230,7 @@
 ;; rule 171
 (define-parameterized-rule l-nb-literal-text (n)
   `(and
-    (* ,(prule 'l-empty n 'block-in))
+    (* ,(prule 'l-empty n :block-in))
     ,(prule 's-indent n)
     (+ nb-char))
   (:lambda (x)
@@ -1272,7 +1276,7 @@
     ,(prule 's-nb-folded-text n)
     (and
      (* (and
-	 ,(prule 'b-l-folded n 'block-in)
+	 ,(prule 'b-l-folded n :block-in)
 	 ,(prule 's-nb-folded-text n))))))
 
 ;; rule 177
@@ -1288,7 +1292,7 @@
 (define-parameterized-rule b-l-spaced (n)
   `(and
     b-as-line-feed
-    (* ,(prule 'l-empty n 'block-in))))
+    (* ,(prule 'l-empty n :block-in))))
 
 ;; rule 179
 (define-parameterized-rule l-nb-spaced-lines (n)
@@ -1300,7 +1304,7 @@
 ;; rule 180
 (define-parameterized-rule l-nb-same-lines (n)
   `(and
-    (* ,(prule 'l-empty n 'block-in))
+    (* ,(prule 'l-empty n :block-in))
     (or ,(prule 'l-nb-folded-lines n)
 	,(prule 'l-nb-spaced-lines n))))
 
@@ -1336,7 +1340,7 @@
   `(and
     #\-
     (& (! ns-char))
-    ,(prule 's-l+block-indented n 'block-in))
+    ,(prule 's-l+block-indented n :block-in))
   (:function third))
 
 ;;rule 185
@@ -1374,12 +1378,13 @@
 
 ;; rule 187
 (define-parameterized-rule l+block-mapping (n)
-  (let ((m (detect-indentation-level input position end)))
-    (if (and m
-	     (> m n))
+  ;; next-indent here is what the YAML grammer refers to as m+n
+  (let ((next-indent (detect-indentation-level input position end)))
+    (if (and next-indent
+	     (> next-indent n))
 	`(+
-	  (and ,(prule 's-indent (+ n m))
-	       ,(prule 'ns-l-block-map-entry (+ n m))))
+	  (and ,(prule 's-indent next-indent)
+	       ,(prule 'ns-l-block-map-entry next-indent)))
 	'(or)))
   (:lambda (x)
     (cons 'map
@@ -1405,7 +1410,7 @@
 (define-parameterized-rule c-l-block-map-explicit-key (n)
   `(and
     #\?
-    ,(prule 's-l+block-indented n 'block-out))
+    ,(prule 's-l+block-indented n :block-out))
   (:function second))
 
 ;; rule 191
@@ -1413,7 +1418,7 @@
   `(and
     ,(prule 's-indent n)
     #\:
-    ,(prule 's-l+block-indented n 'block-out))
+    ,(prule 's-l+block-indented n :block-out))
   (:function third))
 
 ;; rule 192
@@ -1426,10 +1431,10 @@
 
 ;; rule 193
 (defun c-s-implicit-json-key-block-key (i p e)
-  (c-s-implicit-json-key i p e 'block-key))
+  (c-s-implicit-json-key i p e :block-key))
 
 (defun ns-s-implicit-yaml-key-block-key (i p e)
-  (ns-s-implicit-yaml-key i p e 'block-key))
+  (ns-s-implicit-yaml-key i p e :block-key))
 
 (defrule ns-s-block-map-implicit-key
   (or
@@ -1442,7 +1447,7 @@
     #\:
     (or
      (and
-      ,(prule 's-l+block-node n 'block-out)
+      ,(prule 's-l+block-node n :block-out)
       (and))
      (and e-node s-l-comments)))
   (:function caadr))
@@ -1466,8 +1471,8 @@
 ;; rule 197
 (define-parameterized-rule s-l+flow-in-block (n) 
   `(and
-    ,(prule 's-separate (+ n 1) 'flow-out)
-    ,(prule 'ns-flow-node (+ n 1) 'flow-out)
+    ,(prule 's-separate (+ n 1) :flow-out)
+    ,(prule 'ns-flow-node (+ n 1) :flow-out)
     s-l-comments)
   (:function second))
 
@@ -1496,7 +1501,8 @@
     (?
      (and
       ,(prule 's-separate (1+ n) c)
-      ,(prule 'c-ns-properties (1+ n) c)))
+      ,(prule 'c-ns-properties (1+ n) c)
+      (& s-l-comments)))
     s-l-comments
     (or
      ,(prule 'l+block-sequence (seq-spaces n c))
@@ -1508,7 +1514,7 @@
 
 ;; rule 201
 (defun seq-spaces (n c)
-  (if (eql c 'block-out)
+  (if (eql c :block-out)
       (1- n)
       n))
 
@@ -1518,7 +1524,7 @@
      (and
       c-byte-order-mark
       l-comment-*)
-     l-comment-+)
+     l-comment-*)
   (:constant nil))
 
 ;; rule 203
@@ -1551,7 +1557,7 @@
 (defun bare-doc-start (i p e)
   (let* ((end (find-next-forbidden i p e))
 	 (result (multiple-value-list
-		  (s-l+block-node i p end -1 'block-in))))
+		  (s-l+block-node i p end -1 :block-in))))
     (when (null (second result))
       (setf (second result) end))
     (values-list result)))
@@ -1562,10 +1568,13 @@
     (list nil x)))
 
 ;;rule 208
+(defrule empty-document (and e-node s-l-comments)
+  (:constant 'null))
+
 (defrule l-explicit-document
     (and c-directives-end
 	 (or l-bare-document
-	     (and e-node s-l-comments)))
+	     empty-document))
   (:function second))
 
 ;;rule 209
@@ -1597,6 +1606,18 @@
       l-document-prefix
       l-document-prefix-+)
      l-document-prefix))
+
+(defrule l-yaml-stream-helper-rule
+    (or
+     (and
+      (+ l-document-suffix)
+      l-document-prefix-*
+      (? l-any-document))
+     (and 
+      l-document-prefix-*
+      (and)
+      l-explicit-document)
+     l-document-prefix-+))
 
 (defun l-yaml-stream-helper (input position end)
   (let (prod new-pos result)
@@ -1632,5 +1653,42 @@
   (:lambda (x)
     `(documents
       ,(second x)
-      ,@(mapcar #'third (third x)))))
+      ,@(remove nil (mapcar #'third (third x))))))
 	
+
+(defun parse-no-schema (input)
+  (esrap:parse 'l-yaml-stream input))
+
+(define-condition yaml-error ()
+  ()
+    (:documentation "The base class of all YAML conditions."))
+
+(defun process-document-like-cl-yaml (doc)
+  (optima:match doc
+    ((type string) (parse-scalar doc))
+    (nil nil)
+    ((cons 'seq rest)
+     (loop for item in rest
+	collect (process-document-like-cl-yaml item)))
+    ((cons 'map rest)
+     (loop with result = (make-hash-table :test 'equal)
+	for item in rest
+	do (optima:match item
+	     ((list 'entry key value)
+	      (setf (gethash (process-document-like-cl-yaml key) result)
+		    (process-document-like-cl-yaml value)))
+	     (_ (error "non-entry inside map")))
+	finally (return result)))
+    (x (error "Unexpected parse tree ~A" x))))
+
+(defun parse-like-cl-yaml (input &key multi-document-p)
+  (let ((parsed (parse-no-schema input)))
+    (optima:match parsed
+      ((cons 'documents docs)
+       (assert (or (= (length docs) 1) multi-document-p))
+       (if multi-document-p
+	   (cons :documents
+		 (loop for (prefix meat) in docs
+		    collect (process-document-like-cl-yaml meat)))
+	   (process-document-like-cl-yaml (cadar docs))))
+      (x (error "Unexpected parse tree ~a" x)))))
