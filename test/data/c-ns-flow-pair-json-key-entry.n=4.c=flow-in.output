@@ -1,0 +1,30 @@
+# B: 0, C: 0, L: 1, c: 0
+N
+# B: 0, C: 0, L: 1, c: 0
+S
+# B: 0, C: 0, L: 1, c: 0
+I"
+# B: 1, C: 1, L: 1, c: 1
+Ta
+# B: 2, C: 2, L: 1, c: 2
+I"
+# B: 3, C: 3, L: 1, c: 3
+s
+# B: 3, C: 3, L: 1, c: 3
+n
+# B: 3, C: 3, L: 1, c: 3
+I:
+# B: 4, C: 4, L: 1, c: 4
+!Commit to 'pair' was made outside it
+# B: 4, C: 4, L: 1, c: 4
+N
+# B: 4, C: 4, L: 1, c: 4
+S
+# B: 5, C: 5, L: 1, c: 5
+!Commit to 'node' was made outside it
+# B: 4, C: 4, L: 1, c: 4
+Tb
+# B: 5, C: 5, L: 1, c: 5
+s
+# B: 5, C: 5, L: 1, c: 5
+n

@@ -1,0 +1,38 @@
+# B: 0, C: 0, L: 1, c: 0
+w 
+# B: 1, C: 1, L: 1, c: 1
+P
+# B: 1, C: 1, L: 1, c: 1
+G
+# B: 1, C: 1, L: 1, c: 1
+H
+# B: 1, C: 1, L: 1, c: 1
+I!
+# B: 2, C: 2, L: 1, c: 2
+h
+# B: 2, C: 2, L: 1, c: 2
+tfoo
+# B: 5, C: 5, L: 1, c: 5
+g
+# B: 5, C: 5, L: 1, c: 5
+p
+# B: 5, C: 5, L: 1, c: 5
+b\x0a
+# B: 6, C: 6, L: 2, c: 0
+i   
+# B: 9, C: 9, L: 2, c: 3
+S
+# B: 9, C: 9, L: 2, c: 3
+I|
+# B: 10, C: 10, L: 2, c: 4
+!Commit to 'node' was made outside it
+# B: 10, C: 10, L: 2, c: 4
+b\x0a
+# B: 11, C: 11, L: 3, c: 0
+i   
+# B: 14, C: 14, L: 3, c: 3
+Ta
+# B: 15, C: 15, L: 3, c: 4
+L\x0a
+# B: 16, C: 16, L: 4, c: 0
+s

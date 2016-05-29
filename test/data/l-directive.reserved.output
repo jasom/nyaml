@@ -1,0 +1,24 @@
+# B: 0, C: 0, L: 1, c: 0
+D
+# B: 0, C: 0, L: 1, c: 0
+I%
+# B: 1, C: 1, L: 1, c: 1
+!Commit to 'doc' was made outside it
+# B: 1, C: 1, L: 1, c: 1
+tname
+# B: 5, C: 5, L: 1, c: 5
+w 
+# B: 6, C: 6, L: 1, c: 6
+tvalue
+# B: 11, C: 11, L: 1, c: 11
+w 
+# B: 12, C: 12, L: 1, c: 12
+t#
+# B: 13, C: 13, L: 1, c: 13
+w 
+# B: 14, C: 14, L: 1, c: 14
+ttext
+# B: 18, C: 18, L: 1, c: 18
+d
+# B: 18, C: 18, L: 1, c: 18
+b\x0a

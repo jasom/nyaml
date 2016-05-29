@@ -1,0 +1,24 @@
+# B: 0, C: 0, L: 1, c: 0
+i    
+# B: 5, C: 5, L: 1, c: 5
+!Commit to 'fold' was made outside it
+# B: 4, C: 4, L: 1, c: 4
+- a
+# B: 6, C: 6, L: 1, c: 6
+L\x0a
+# B: 7, C: 7, L: 2, c: 0
+i    
+# B: 12, C: 12, L: 2, c: 5
+!Commit to 'fold' was made outside it
+# B: 11, C: 11, L: 2, c: 4
+- b
+# B: 13, C: 13, L: 2, c: 6
+L\x0a
+# B: 14, C: 14, L: 3, c: 0
+L\x0a
+# B: 15, C: 15, L: 4, c: 0
+i    
+# B: 20, C: 20, L: 4, c: 5
+!Commit to 'fold' was made outside it
+# B: 19, C: 19, L: 4, c: 4
+- c

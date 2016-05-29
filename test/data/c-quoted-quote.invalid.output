@@ -1,0 +1,10 @@
+# B: 0, C: 0, L: 1, c: 0
+E
+# B: 0, C: 0, L: 1, c: 0
+I'
+# B: 1, C: 1, L: 1, c: 1
+!Commit to 'escape' was made outside it
+# B: 1, C: 1, L: 1, c: 1
+e
+# B: 1, C: 1, L: 1, c: 1
+!Unexpected 'a'

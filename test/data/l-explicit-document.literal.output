@@ -1,0 +1,22 @@
+# B: 0, C: 0, L: 1, c: 0
+K---
+# B: 3, C: 3, L: 1, c: 3
+!Commit to 'doc' was made outside it
+# B: 3, C: 3, L: 1, c: 3
+N
+# B: 3, C: 3, L: 1, c: 3
+w 
+# B: 4, C: 4, L: 1, c: 4
+S
+# B: 4, C: 4, L: 1, c: 4
+I|
+# B: 5, C: 5, L: 1, c: 5
+b\x0a
+# B: 6, C: 6, L: 2, c: 0
+Ta
+# B: 7, C: 7, L: 2, c: 1
+L\x0a
+# B: 8, C: 8, L: 3, c: 0
+s
+# B: 8, C: 8, L: 3, c: 0
+n

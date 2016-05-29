@@ -1,0 +1,60 @@
+# B: 0, C: 0, L: 1, c: 0
+N
+# B: 0, C: 0, L: 1, c: 0
+P
+# B: 0, C: 0, L: 1, c: 0
+G
+# B: 0, C: 0, L: 1, c: 0
+H
+# B: 0, C: 0, L: 1, c: 0
+I!
+# B: 1, C: 1, L: 1, c: 1
+h
+# B: 1, C: 1, L: 1, c: 1
+ta
+# B: 2, C: 2, L: 1, c: 2
+g
+# B: 2, C: 2, L: 1, c: 2
+p
+# B: 2, C: 2, L: 1, c: 2
+b\x0a
+# B: 3, C: 3, L: 2, c: 0
+M
+# B: 3, C: 3, L: 2, c: 0
+X
+# B: 3, C: 3, L: 2, c: 0
+N
+# B: 3, C: 3, L: 2, c: 0
+S
+# B: 3, C: 3, L: 2, c: 0
+Tb
+# B: 4, C: 4, L: 2, c: 1
+s
+# B: 4, C: 4, L: 2, c: 1
+n
+# B: 4, C: 4, L: 2, c: 1
+I:
+# B: 5, C: 5, L: 2, c: 2
+!Commit to 'node' was made outside it
+# B: 5, C: 5, L: 2, c: 2
+w 
+# B: 6, C: 6, L: 2, c: 3
+N
+# B: 6, C: 6, L: 2, c: 3
+S
+# B: 7, C: 7, L: 2, c: 4
+!Commit to 'node' was made outside it
+# B: 6, C: 6, L: 2, c: 3
+Tc
+# B: 7, C: 7, L: 2, c: 4
+s
+# B: 7, C: 7, L: 2, c: 4
+n
+# B: 7, C: 7, L: 2, c: 4
+b\x0a
+# B: 8, C: 8, L: 3, c: 0
+x
+# B: 8, C: 8, L: 3, c: 0
+m
+# B: 8, C: 8, L: 3, c: 0
+n

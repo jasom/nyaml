@@ -1,0 +1,22 @@
+# B: 0, C: 0, L: 1, c: 0
+S
+# B: 0, C: 0, L: 1, c: 0
+I"
+# B: 1, C: 1, L: 1, c: 1
+!Commit to 'node' was made outside it
+# B: 1, C: 1, L: 1, c: 1
+T a
+# B: 3, C: 3, L: 1, c: 3
+w 
+# B: 4, C: 4, L: 1, c: 4
+l\x0a
+# B: 5, C: 5, L: 2, c: 0
+i    
+# B: 9, C: 9, L: 2, c: 4
+w\x09
+# B: 10, C: 10, L: 2, c: 5
+Ta b\x09c 
+# B: 16, C: 16, L: 2, c: 11
+I"
+# B: 17, C: 17, L: 2, c: 12
+s

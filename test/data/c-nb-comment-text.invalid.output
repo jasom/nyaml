@@ -1,0 +1,6 @@
+# B: 0, C: 0, L: 1, c: 0
+C
+# B: 0, C: 0, L: 1, c: 0
+c
+# B: 0, C: 0, L: 1, c: 0
+!Unexpected '\x0a'

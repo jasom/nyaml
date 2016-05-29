@@ -1,0 +1,8 @@
+# B: 0, C: 0, L: 1, c: 0
+i    
+# B: 5, C: 5, L: 1, c: 5
+!Commit to 'fold' was made outside it
+# B: 4, C: 4, L: 1, c: 4
+-a
+# B: 5, C: 5, L: 1, c: 5
+!Unexpected '\x0a'

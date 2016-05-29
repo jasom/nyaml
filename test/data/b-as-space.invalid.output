@@ -1,0 +1,4 @@
+# B: 0, C: 0, L: 1, c: 0
+l\x0a
+# B: 1, C: 1, L: 2, c: 0
+!Unexpected '\x0a'

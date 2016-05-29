@@ -1,0 +1,82 @@
+# B: 0, C: 0, L: 1, c: 0
+M
+# B: 0, C: 0, L: 1, c: 0
+i  
+# B: 2, C: 2, L: 1, c: 2
+X
+# B: 2, C: 2, L: 1, c: 2
+N
+# B: 2, C: 2, L: 1, c: 2
+S
+# B: 2, C: 2, L: 1, c: 2
+Ta
+# B: 3, C: 3, L: 1, c: 3
+s
+# B: 3, C: 3, L: 1, c: 3
+n
+# B: 3, C: 3, L: 1, c: 3
+I:
+# B: 4, C: 4, L: 1, c: 4
+!Commit to 'node' was made outside it
+# B: 4, C: 4, L: 1, c: 4
+w 
+# B: 5, C: 5, L: 1, c: 5
+N
+# B: 5, C: 5, L: 1, c: 5
+S
+# B: 6, C: 6, L: 1, c: 6
+!Commit to 'node' was made outside it
+# B: 5, C: 5, L: 1, c: 5
+Tb
+# B: 6, C: 6, L: 1, c: 6
+s
+# B: 6, C: 6, L: 1, c: 6
+n
+# B: 6, C: 6, L: 1, c: 6
+b\x0a
+# B: 7, C: 7, L: 2, c: 0
+x
+# B: 7, C: 7, L: 2, c: 0
+i  
+# B: 9, C: 9, L: 2, c: 2
+X
+# B: 9, C: 9, L: 2, c: 2
+I?
+# B: 10, C: 10, L: 2, c: 3
+!Commit to 'node' was made outside it
+# B: 10, C: 10, L: 2, c: 3
+w 
+# B: 11, C: 11, L: 2, c: 4
+N
+# B: 11, C: 11, L: 2, c: 4
+S
+# B: 11, C: 11, L: 2, c: 4
+Tc
+# B: 12, C: 12, L: 2, c: 5
+s
+# B: 12, C: 12, L: 2, c: 5
+n
+# B: 12, C: 12, L: 2, c: 5
+b\x0a
+# B: 13, C: 13, L: 3, c: 0
+i  
+# B: 15, C: 15, L: 3, c: 2
+I:
+# B: 16, C: 16, L: 3, c: 3
+w 
+# B: 17, C: 17, L: 3, c: 4
+N
+# B: 17, C: 17, L: 3, c: 4
+S
+# B: 17, C: 17, L: 3, c: 4
+Td
+# B: 18, C: 18, L: 3, c: 5
+s
+# B: 18, C: 18, L: 3, c: 5
+n
+# B: 18, C: 18, L: 3, c: 5
+b\x0a
+# B: 19, C: 19, L: 4, c: 0
+x
+# B: 19, C: 19, L: 4, c: 0
+m

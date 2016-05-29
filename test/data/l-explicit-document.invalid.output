@@ -1,0 +1,16 @@
+# B: 0, C: 0, L: 1, c: 0
+K---
+# B: 3, C: 3, L: 1, c: 3
+!Commit to 'doc' was made outside it
+# B: 3, C: 3, L: 1, c: 3
+N
+# B: 3, C: 3, L: 1, c: 3
+S
+# B: 3, C: 3, L: 1, c: 3
+s
+# B: 3, C: 3, L: 1, c: 3
+n
+# B: 3, C: 3, L: 1, c: 3
+b\x0a
+# B: 4, C: 4, L: 2, c: 0
+!Unexpected '.'

@@ -1,0 +1,22 @@
+# B: 0, C: 0, L: 1, c: 0
+Q
+# B: 0, C: 0, L: 1, c: 0
+I[
+# B: 1, C: 1, L: 1, c: 1
+!Commit to 'node' was made outside it
+# B: 1, C: 1, L: 1, c: 1
+N
+# B: 1, C: 1, L: 1, c: 1
+S
+# B: 1, C: 1, L: 1, c: 1
+Ta
+# B: 2, C: 2, L: 1, c: 2
+s
+# B: 2, C: 2, L: 1, c: 2
+n
+# B: 2, C: 2, L: 1, c: 2
+I,
+# B: 3, C: 3, L: 1, c: 3
+q
+# B: 3, C: 3, L: 1, c: 3
+!Unexpected end of input

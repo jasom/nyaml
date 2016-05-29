@@ -1,0 +1,26 @@
+# B: 0, C: 0, L: 1, c: 0
+tTAG
+# B: 3, C: 3, L: 1, c: 3
+!Commit to 'directive' was made outside it
+# B: 3, C: 3, L: 1, c: 3
+w 
+# B: 4, C: 4, L: 1, c: 4
+H
+# B: 4, C: 4, L: 1, c: 4
+I!
+# B: 5, C: 5, L: 1, c: 5
+tname
+# B: 9, C: 9, L: 1, c: 9
+I!
+# B: 10, C: 10, L: 1, c: 10
+h
+# B: 10, C: 10, L: 1, c: 10
+w 
+# B: 11, C: 11, L: 1, c: 11
+G
+# B: 11, C: 11, L: 1, c: 11
+I!
+# B: 12, C: 12, L: 1, c: 12
+tprefix
+# B: 18, C: 18, L: 1, c: 18
+g

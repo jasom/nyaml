@@ -1,0 +1,12 @@
+# B: 0, C: 0, L: 1, c: 0
+S
+# B: 0, C: 0, L: 1, c: 0
+I>
+# B: 1, C: 1, L: 1, c: 1
+!Commit to 'node' was made outside it
+# B: 1, C: 1, L: 1, c: 1
+b\x0a
+# B: 2, C: 2, L: 2, c: 0
+s
+# B: 2, C: 2, L: 2, c: 0
+!Unexpected ' '

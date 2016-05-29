@@ -1,0 +1,24 @@
+# B: 0, C: 0, L: 1, c: 0
+Q
+# B: 0, C: 0, L: 1, c: 0
+I[
+# B: 1, C: 1, L: 1, c: 1
+!Commit to 'node' was made outside it
+# B: 1, C: 1, L: 1, c: 1
+w 
+# B: 2, C: 2, L: 1, c: 2
+N
+# B: 2, C: 2, L: 1, c: 2
+S
+# B: 2, C: 2, L: 1, c: 2
+T::std::vector
+# B: 15, C: 15, L: 1, c: 15
+s
+# B: 15, C: 15, L: 1, c: 15
+n
+# B: 15, C: 15, L: 1, c: 15
+w 
+# B: 16, C: 16, L: 1, c: 16
+I]
+# B: 17, C: 17, L: 1, c: 17
+q

@@ -1,0 +1,20 @@
+# B: 0, C: 0, L: 1, c: 0
+I:
+# B: 1, C: 1, L: 1, c: 1
+!Commit to 'node' was made outside it
+# B: 1, C: 1, L: 1, c: 1
+w 
+# B: 2, C: 2, L: 1, c: 2
+N
+# B: 2, C: 2, L: 1, c: 2
+S
+# B: 3, C: 3, L: 1, c: 3
+!Commit to 'node' was made outside it
+# B: 2, C: 2, L: 1, c: 2
+Ta
+# B: 3, C: 3, L: 1, c: 3
+s
+# B: 3, C: 3, L: 1, c: 3
+n
+# B: 3, C: 3, L: 1, c: 3
+b\x0a

@@ -1,11 +1,22 @@
 ;;;; nyaml.asd
 
 (asdf:defsystem #:nyaml
-  :description "Describe nyaml here"
-  :author "Your Name <your.name@example.com>"
-  :license "Specify license here"
-  :depends-on (#:esrap #:alexandria)
+  :description "ESRAP based YAML parser"
+  :author "Jason Miller <aidenn0@geocities.com>"
+  :license "MIT/X11"
+  :depends-on (#:esrap #:alexandria #:cl-ppcre #:parse-number #:optima)
   :serial t
   :components ((:file "package")
-               (:file "nyaml")))
+               (:file "nyaml")
+	       (:file "float")
+	       (:file "scalar")))
 
+
+(asdf:defsystem #:nyaml/test
+  :description "Tests for NYAML"
+  :author "Jason Miller <aidenn0@geocities.com>"
+  :license "MIT/X11"
+  :depends-on (#:esrap #:alexandria #:split-sequence #:nyaml)
+  :serial t
+  :components ((:module "test"
+			:components ((:file "test")))))

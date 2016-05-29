@@ -1,0 +1,12 @@
+# B: 0, C: 0, L: 1, c: 0
+tTAG
+# B: 3, C: 3, L: 1, c: 3
+!Commit to 'directive' was made outside it
+# B: 3, C: 3, L: 1, c: 3
+w 
+# B: 4, C: 4, L: 1, c: 4
+H
+# B: 4, C: 4, L: 1, c: 4
+h
+# B: 4, C: 4, L: 1, c: 4
+!Unexpected 'a'
