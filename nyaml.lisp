@@ -1162,9 +1162,18 @@
      when result return (values (length (second prod)) start t)
        finally (return (values nil nil "Unable to detect indentation"))))
 
+(defrule ns-dec-digit-positive
+    (and
+     (! #\0)
+     ns-dec-digit)
+  (:destructure (_ x)
+    (declare (ignore _))
+    x))
+
 (define-parameterized-rule c-indentation-indicator (n)
-  `(or ns-dec-digit
-	(function auto-detect-indentation))
+  `(or 
+    ns-dec-digit-positive
+    (function auto-detect-indentation))
   (:lambda  (x)
     (list 'indent
 	  (if (characterp x) (parse-integer (string x)) (- x n)))))
