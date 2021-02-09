@@ -1238,7 +1238,10 @@
 	(values production position result)))
     (let ((m (getf production 'indent))
 	  (tee (getf production 'chomp)))
-      ;(princ m) (princ tee) (terpri)
+      (princ m) (princ tee) (terpri)
+      (when (<= m 0)
+	(return-from block-header-then
+	  (values nil start)))
       (funcall next input position end (+ n m) tee))))
 
 (define-parameterized-rule c-l+literal (n)
