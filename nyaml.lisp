@@ -503,12 +503,18 @@
 
 ;; rule 83
 (defrule ns-reserved-directive
-    (and ns-directive-name
+    (and (!
+	  (and
+	   (or "TAG" "YAML")
+	   s-white))
+	 ns-directive-name
 	 (* (and s-separate-in-line ns-directive-parameter)))
-  (:lambda (production &bounds start)
+  (:destructure (_ name args &bounds start)
+    (declare (ignore _))
     (funcall *warning*
 	     "Unrecognized directive ~A at position ~a"
-	     (text (car production)) start)))
+	     (text name) start)
+    `(directive ,(text name) ,@(loop for (_ arg) on args by #'cddr collect arg))))
 
 ;; rule 84
 (defrule ns-directive-name (+ ns-char))
