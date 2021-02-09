@@ -4,6 +4,9 @@
   :description "ESRAP based YAML parser"
   :author "Jason Miller <aidenn0@geocities.com>"
   :license "MIT/X11"
+  :in-order-to ((asdf:test-op (asdf:load-op "nyaml/test")))
+  :perform (asdf:test-op (o c)
+			 (uiop:symbol-call "NYAML-TEST" 'run-tests))
   :depends-on (#:esrap #:alexandria #:cl-ppcre #:parse-number #:optima)
   :serial t
   :components ((:file "package")

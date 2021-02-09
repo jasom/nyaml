@@ -127,6 +127,8 @@
 ;;rule 35
 (defrule ns-dec-digit (character-ranges (#\0 #\9)))
 
+(defrule ns-dec-digit-positive (character-ranges (#\1 #\9)))
+
 ;;rule 36
 (defrule ns-hex-digit
     (or ns-dec-digit
@@ -1133,28 +1135,36 @@
 ;; rule 163
 (defrule indent-level-helper (and b-break (* s-space) (! b-break)))
 
-(defun detect-indentation-level (input start end)
+(defun detect-indentation-level (n input start end)
+  (let ((result (c-indentation-indicator input start end n)))
+    (when (second result) (+ n (second result)))))
+
+(defun auto-detect-indentation (input start end)
   (loop
      with prod
      with position
      with result
-     for possible-start = (if (= start 0) 0 ; Beginning of input is also a start of line
-			      (position-if (rcurry #'member '(#\Newline #\Return)) input
+     for possible-start = (if (= start 0)
+			      0 ;(1- start)
+			      #-(or)(position-if (rcurry #'member '(#\Newline #\Return)) input
 					   :start (1- start)))
        then (position-if (rcurry #'member '(#\Newline #\Return)) input
 					  :start (1+ possible-start))
        while possible-start
+     when (not (or (= possible-start 0) (member (elt input possible-start) '(#\Newline #\Return))))
+       return (values nil nil "Unable to detect indentation 2")
        do (setf (values prod position result)
 		(esrap:parse 'indent-level-helper
 			     input :start possible-start
 			     :end end :junk-allowed t))
      ;; do (format t "~&~S ~S ~S ~S~%" possible-start prod position result)
-     when result return (values (length (second prod)) start t)))
+     when result return (values (length (second prod)) start t)
+       finally (return (values nil nil "Unable to detect indentation"))))
 
 (define-parameterized-rule c-indentation-indicator (n)
   `(or ns-dec-digit
-       (function detect-indentation-level))
-  (:lambda (x)
+	(function auto-detect-indentation))
+  (:lambda  (x)
     (list 'indent
 	  (if (characterp x) (parse-integer (string x)) (- x n)))))
 
@@ -1323,7 +1333,7 @@
      
 ;; rule 183
 (define-parameterized-rule l+block-sequence (n)
-  (let ((next-indent (detect-indentation-level input position end)))
+  (let ((next-indent (detect-indentation-level n input position end)))
     (if (and next-indent
 	     (> next-indent n))
 	`(+
@@ -1379,7 +1389,7 @@
 ;; rule 187
 (define-parameterized-rule l+block-mapping (n)
   ;; next-indent here is what the YAML grammer refers to as m+n
-  (let ((next-indent (detect-indentation-level input position end)))
+  (let ((next-indent (detect-indentation-level n input position end)))
     (if (and next-indent
 	     (> next-indent n))
 	`(+
@@ -1657,7 +1667,8 @@
 	
 
 (defun parse-no-schema (input)
-  (esrap:parse 'l-yaml-stream input))
+  (let ((input (concatenate 'string (string #\Newline) input)))
+    (esrap:parse 'l-yaml-stream input)))
 
 (define-condition yaml-error ()
   ()
