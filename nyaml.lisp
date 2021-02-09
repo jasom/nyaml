@@ -16,6 +16,7 @@
 		      (#.(code-char #x20) #.(code-char #x7e))
 		      #.(code-char #x85)
 		      (#.(code-char #xa0) #.(code-char #xd7ff))
+		      (#.(code-char #xe000) #.(code-char #xfffd))
 		      (#.(code-char #x10000) #.(code-char #x10ffff))))
 
 ;; rule 2
