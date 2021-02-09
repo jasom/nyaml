@@ -1048,16 +1048,34 @@
     ,(prule 'c-ns-flow-map-adjacent-value n c)))
 
 ;; rule 154
-;;TODO implement size checking
-(define-parameterized-rule ns-s-implicit-yaml-key (c)
+(defun size-check (fn limit input start end &rest args)
+  (multiple-value-bind (result next valid)
+      (apply fn input start end args)
+    (cond
+      ((not valid)
+       (return-from size-check (values result next valid)))
+      ((and next (> (- next start) limit))
+       (return-from size-check (values nil start nil)))
+      ((and (not next)
+	    (> (- end start) limit))
+       (return-from size-check (values nil start nil)))
+      (t
+       (values result next valid)))))
+
+(defun ns-s-implicit-yaml-key (input start end c)
+  (size-check #'ns-s-implicit-yaml-key-helper 1024 input start end c))
+
+(define-parameterized-rule ns-s-implicit-yaml-key-helper (c)
   `(and
     ,(prule 'ns-flow-yaml-node 0 c)
     (? s-separate-in-line))
   (:function car))
 
 ;; rule 155
-;; TODO implement size checking
-(define-parameterized-rule c-s-implicit-json-key (c)
+(defun c-s-implicit-json-key (input start end c)
+  (size-check #'c-s-implicit-json-key-helper 1024 input start end c))
+
+(define-parameterized-rule c-s-implicit-json-key-helper (c)
   `(and
     ,(prule 'c-flow-json-node 0 c)
     (? s-separate-in-line))
