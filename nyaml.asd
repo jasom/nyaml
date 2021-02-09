@@ -6,7 +6,7 @@
   :license "MIT/X11"
   :in-order-to ((asdf:test-op (asdf:load-op "nyaml/test")))
   :perform (asdf:test-op (o c)
-			 (uiop:symbol-call "NYAML-TEST" 'run-tests))
+			 (uiop:symbol-call "PARACHUTE" "TEST" "NYAML-TEST"))
   :depends-on (#:esrap #:alexandria #:cl-ppcre #:parse-number #:optima)
   :serial t
   :components ((:file "package")
@@ -19,7 +19,9 @@
   :description "Tests for NYAML"
   :author "Jason Miller <aidenn0@geocities.com>"
   :license "MIT/X11"
-  :depends-on (#:esrap #:alexandria #:split-sequence #:nyaml)
+  :depends-on (#:esrap #:alexandria #:split-sequence #:nyaml #:parachute)
   :serial t
   :components ((:module "test"
-			:components ((:file "test")))))
+		:components
+		((:file "test")
+		 (:file "nyaml-reference")))))
