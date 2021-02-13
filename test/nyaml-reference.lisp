@@ -47,6 +47,7 @@
 	 (invalid
 	  (or
 	   (member "invalid" info :test #'string=)
+	   (member "unparsed-" info :test #'alexandria:starts-with-subseq)
 	   (output-error-p (uiop:merge-pathnames* (make-pathname :type  "output") pathname))))
 	 (input (slurp-file pathname))
 	 (args (loop for item in (remove-if-not (curry #'find #\=) (cdr info))
