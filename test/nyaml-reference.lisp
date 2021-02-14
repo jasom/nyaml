@@ -80,4 +80,3 @@
 	 (esrap:esrap-parse-error () nil))))))
   
 
-(esrap::parse 'nyaml::s-tab (slurp-file (asdf:system-relative-pathname :nyaml "test/data/s-tab.input")))

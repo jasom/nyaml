@@ -2,6 +2,8 @@
 
 (in-package #:nyaml)
 
+(named-readtables:in-readtable :fare-quasiquote)
+
 (defvar *warning* (lambda (fmt-string &rest args) (declare (ignore fmt-string args))))
 (defvar *error* (lambda (fmt-string args)
 		  (apply 'error fmt-string args)))
@@ -593,7 +595,9 @@
      (? (and ,(prule 's-separate n c) c-ns-anchor-property)))
     (and
      c-ns-anchor-property
-     (? (and ,(prule 's-separate n c) c-ns-tag-property)))))
+     (? (and ,(prule 's-separate n c) c-ns-tag-property))))
+  (:lambda (x)
+    `(properties ,@(remove nil x))))
 
 
 ;; rule 97
@@ -622,7 +626,10 @@
 ;;rule 101
 (defrule c-ns-anchor-property
     (and #\&
-	 ns-anchor-name))
+	 ns-anchor-name)
+  (:destructure (_ name)
+    (declare (ignore _))
+    `(anchor ,(text name))))
 
 ;; rule 102
 (defrule ns-anchor-char
@@ -637,12 +644,15 @@
 ;; rule 104
 (defrule c-ns-alias-node
     (and #\*
-	 ns-anchor-name))
+	 ns-anchor-name)
+  (:destructure (star name)
+    (declare (ignore star))
+    `(alias ,(text name))))
 
 ;; rule 105
 (defrule e-scalar
     (and)
-  (:constant 'null))
+  (:constant 'yaml-null))
 
 (defrule e-node e-scalar)
 
@@ -966,6 +976,7 @@
 	  ,(prule 'c-ns-flow-map-separate-value n c))
      e-node))
   (:lambda (stuff)
+    (print stuff)
     (destructuring-bind (key value)
 	stuff
 	`(entry ,key
@@ -1115,7 +1126,15 @@
       (and
        ,(prule 's-separate n c)
        ,(prule 'ns-flow-yaml-content n c))
-      e-scalar))))
+      (and
+       "" 				; To make destructuring easier
+       e-scalar))))
+  (:lambda (x)
+    (trivia:match x
+      (`(alias ,@_) x)
+      (`((properties ,@props) (,_ ,content))
+	`((properties ,@props) ,content))
+      (_ x))))
 
 ;; rule 160
 (define-parameterized-rule c-flow-json-node (n c)
@@ -1125,6 +1144,7 @@
       ,(prule 'c-ns-properties n c)
       ,(prule 's-separate n c)))
     ,(prule 'c-flow-json-content n c))
+  ;; TODO actually save properties
   (:function second))
 
 ;; rule 161
@@ -1138,7 +1158,15 @@
        (and
 	,(prule 's-separate n c)
 	,(prule 'ns-flow-content n c))
-       e-scalar))))
+       (and
+	""				; To make destructuring simpler
+	e-scalar))))
+  (:lambda (x)
+    (trivia:match x
+      (`(alias ,@_) x)
+      (`((properties ,@props) (,_ ,content))
+	`((properties ,@props) ,content))
+      (_ x))))
 
 ;; rule 162
 ;; Note that I'm passing in the indentation level
@@ -1712,16 +1740,20 @@
     (:documentation "The base class of all YAML conditions."))
 
 (defun process-document-like-cl-yaml (doc)
-  (optima:match doc
+  (trivia:match doc
     ((type string) (parse-scalar doc))
     (nil nil)
+    ('yaml-null "")
     ((cons 'seq rest)
      (loop for item in rest
 	collect (process-document-like-cl-yaml item)))
+    #-(or)(`((properties ,@x) ,y)
+      (warn "Ignoring properties ~A" x)
+      (process-document-like-cl-yaml y))
     ((cons 'map rest)
      (loop with result = (make-hash-table :test 'equal)
 	for item in rest
-	do (optima:match item
+	do (trivia:match item
 	     ((list 'entry key value)
 	      (setf (gethash (process-document-like-cl-yaml key) result)
 		    (process-document-like-cl-yaml value)))
@@ -1731,7 +1763,7 @@
 
 (defun parse-like-cl-yaml (input &key multi-document-p)
   (let ((parsed (parse-no-schema input)))
-    (optima:match parsed
+    (trivia:match parsed
       ((cons 'documents docs)
        (assert (or (= (length docs) 1) multi-document-p))
        (if multi-document-p
@@ -1740,3 +1772,46 @@
 		    collect (process-document-like-cl-yaml meat)))
 	   (process-document-like-cl-yaml (cadar docs))))
       (x (error "Unexpected parse tree ~a" x)))))
+
+(defun slurp-bytes (stream)
+  (let ((v (make-array 0 :element-type '(unsigned-byte 8) :adjustable t :fill-pointer 0)))
+    (loop for b = (read-byte stream nil nil)
+	  while b do (vector-push-extend b v))
+    v))
+
+(defun eltn (seq n)
+  (when (> (length seq) n)
+    (elt seq n)))
+
+(defun parse-yaml-file (pathname)
+  (with-open-file (f pathname :element-type '(unsigned-byte 8))
+    (let* ((b (slurp-bytes f))
+	   (encoding
+	     (case (eltn b 0)
+	       (0 (case (eltn b 1)
+		    (0 :utf-32be)
+		    (t :utf-16be)))
+	       (#xff  (case (eltn b 1)
+			(#xfe 
+			 (if (and (zerop (eltn b 2))
+				  (zerop (eltn b 3)))
+			     :utf-32le
+			     :utf-16le))
+			(t :utf-8)))
+	       (#xfe (case (eltn b 1)
+		       (#xff (if (and
+				  (zerop (eltn b 2))
+				  (zerop (eltn b 3)))
+				 :utf-32be
+				 :utf-16be))
+		       (t :utf-8)))
+	       (#xef :utf-8)
+	       (t (case (eltn b 1)
+		    (0 (if (and
+			    (zerop (eltn b 2))
+			    (zerop (eltn b 3)))
+			   :utf-32le
+			   :utf-16le))
+		    (t :utf-8))))))
+      (parse-like-cl-yaml (babel:octets-to-string b :encoding encoding)))))
+	
