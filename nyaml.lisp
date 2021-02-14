@@ -1596,7 +1596,7 @@
      ,(prule 'l+block-mapping n)))
   (:destructure (props comments sequence)
 		(declare (ignore comments))
-		(if props (list props sequence) sequence)))
+		(if props (list (second props) sequence) sequence)))
 
 
 ;; rule 201
