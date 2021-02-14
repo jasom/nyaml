@@ -1300,7 +1300,8 @@
   `(and
     #\|
     ,(prule 'block-header-then n 'l-literal-content))
-  (:text t))
+  (:lambda (x)
+    (text (second x))))
 
 ;; rule 171
 (define-parameterized-rule l-nb-literal-text (n)
@@ -1743,7 +1744,7 @@
   (trivia:match doc
     ((type string) (parse-scalar doc))
     (nil nil)
-    ('yaml-null "")
+    ('yaml-null nil)
     ((cons 'seq rest)
      (loop for item in rest
 	collect (process-document-like-cl-yaml item)))
