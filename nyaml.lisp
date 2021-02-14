@@ -979,7 +979,6 @@
 	  ,(prule 'c-ns-flow-map-separate-value n c))
      e-node))
   (:lambda (stuff)
-    (print stuff)
     (destructuring-bind (key value)
 	stuff
 	`(entry ,key
@@ -1200,6 +1199,7 @@
     with prod
     with position
     with result
+    with last-start = start
     with most-whitespace = 0
     for possible-start = (if (= start 0)
 			     0 ;(1- start)
@@ -1208,7 +1208,8 @@
       then (position-if (rcurry #'member '(#\Newline #\Return)) input
 			:start (1+ possible-start))
     while possible-start
-    do (setf most-whitespace (max most-whitespace (- possible-start start 1))) ; the -1 is to account for newline
+    do (setf most-whitespace (max most-whitespace (- possible-start last-start 1))
+	     last-start  possible-start) ; the -1 is to account for newline
     when (not (or (= possible-start 0) (member (elt input possible-start) '(#\Newline #\Return))))
       return (values nil nil "Unable to detect indentation 2")
     do (setf (values prod position result)
@@ -1337,7 +1338,6 @@
       ,(prule 'b-chomped-last tee)))
     ,(prule 'l-chomped-empty n tee))
   (:lambda (x)
-    (print n)
     x))
 
 ;;rule 174
