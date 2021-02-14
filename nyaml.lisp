@@ -1815,7 +1815,7 @@
   (when (> (length seq) n)
     (elt seq n)))
 
-(defun parse-yaml-file (pathname)
+(defun parse-yaml-file (pathname &key multi-document-p)
   (with-open-file (f pathname :element-type '(unsigned-byte 8))
     (let* ((b (slurp-bytes f))
 	   (encoding
@@ -1845,5 +1845,5 @@
 			   :utf-32le
 			   :utf-16le))
 		    (t :utf-8))))))
-      (parse-like-cl-yaml (babel:octets-to-string b :encoding encoding)))))
+      (parse-like-cl-yaml (babel:octets-to-string b :encoding encoding) :multi-document-p multi-document-p))))
 	

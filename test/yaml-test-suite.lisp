@@ -16,8 +16,12 @@
 	       ((uiop:file-exists-p json)
 		(list `(define-test ,name
 			 (is equalp
-			     (yason:parse ,json)
-			     (nyaml::parse-yaml-file ,yaml)))))
+			     (with-open-file (f ,json)
+			      (loop for x = (handler-case
+						(yason:parse f)
+					      (end-of-file () nil))
+				    while x collect x))
+			     (cdr (nyaml::parse-yaml-file ,yaml :multi-document-p t))))))
 	       ((uiop:file-exists-p (uiop:merge-pathnames* "error" item))
 		(list `(define-test ,name
 			  (fail (nyaml::parse-yaml-file ,yaml)))))
