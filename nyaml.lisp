@@ -618,7 +618,10 @@
 ;; rule 99
 ;; TODO resolve tags
 (defrule c-ns-shorthand-tag
-    (and c-tag-handle (+ ns-tag-char)))
+    (and c-tag-handle (+ ns-tag-char))
+  (:destructure (_ tag-name)
+    (declare (ignore _))
+    `(tag ,(text tag-name))))
 
 ;;rule 100
 (defrule c-non-specific-tag "!")
@@ -1740,17 +1743,25 @@
   ()
     (:documentation "The base class of all YAML conditions."))
 
+(defparameter *tag* nil)
+
 (defun process-document-like-cl-yaml (doc)
   (trivia:match doc
     ((type string) (parse-scalar doc))
-    (nil nil)
-    ('yaml-null nil)
+    ('yaml-null
+     (case *tag*
+       (nil nil)
+       (:|str| "")
+       (t (warn "Uknown tag ~A" *tag*))))
     ((cons 'seq rest)
      (loop for item in rest
 	collect (process-document-like-cl-yaml item)))
-    #-(or)(`((properties ,@x) ,y)
-      (warn "Ignoring properties ~A" x)
-      (process-document-like-cl-yaml y))
+    (`((properties ,@x) ,y)
+      (let ((*tag* (make-keyword (cadr (find 'tag x :key #'car))))
+	    (x (remove 'tag x :key #'car)))
+	(unless (emptyp x)
+	  (warn "Ignoring properties ~A" x))
+	(process-document-like-cl-yaml y)))
     ((cons 'map rest)
      (loop with result = (make-hash-table :test 'equal)
 	for item in rest
