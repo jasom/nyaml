@@ -726,7 +726,8 @@
     #\\
     b-non-content
     (* ,(prule 'l-empty n :flow-in))
-    ,(prule 's-flow-line-prefix n)))
+    ,(prule 's-flow-line-prefix n))
+  (:constant ""))
 
 ;; rule 113
 (define-parameterized-rule s-double-break (n) 
