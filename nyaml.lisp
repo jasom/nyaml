@@ -624,7 +624,8 @@
     `(tag ,(text tag-name))))
 
 ;;rule 100
-(defrule c-non-specific-tag "!")
+(defrule c-non-specific-tag "!"
+  (:constant (list "!" nil)))
 
 ;;rule 101
 (defrule c-ns-anchor-property
