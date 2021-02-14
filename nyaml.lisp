@@ -1197,25 +1197,30 @@
 
 (defun auto-detect-indentation (input start end)
   (loop
-     with prod
-     with position
-     with result
-     for possible-start = (if (= start 0)
-			      0 ;(1- start)
-			      #-(or)(position-if (rcurry #'member '(#\Newline #\Return)) input
-					   :start (1- start)))
-       then (position-if (rcurry #'member '(#\Newline #\Return)) input
-					  :start (1+ possible-start))
-       while possible-start
-     when (not (or (= possible-start 0) (member (elt input possible-start) '(#\Newline #\Return))))
-       return (values nil nil "Unable to detect indentation 2")
-       do (setf (values prod position result)
-		(esrap:parse 'indent-level-helper
-			     input :start possible-start
-			     :end end :junk-allowed t))
-     ;; do (format t "~&~S ~S ~S ~S~%" possible-start prod position result)
-     when result return (values (length (second prod)) start t)
-       finally (return (values nil nil "Unable to detect indentation"))))
+    with prod
+    with position
+    with result
+    with most-whitespace = 0
+    for possible-start = (if (= start 0)
+			     0 ;(1- start)
+			     (position-if (rcurry #'member '(#\Newline #\Return)) input
+					  :start (1- start)))
+      then (position-if (rcurry #'member '(#\Newline #\Return)) input
+			:start (1+ possible-start))
+    while possible-start
+    do (setf most-whitespace (max most-whitespace (- possible-start start 1))) ; the -1 is to account for newline
+    when (not (or (= possible-start 0) (member (elt input possible-start) '(#\Newline #\Return))))
+      return (values nil nil "Unable to detect indentation 2")
+    do (setf (values prod position result)
+	     (esrap:parse 'indent-level-helper
+			  input :start possible-start
+			  :end end :junk-allowed t))
+       ;; do (format t "~&~S ~S ~S ~S~%" possible-start prod position result)
+    when result
+      do (if (>= (length (second prod)) most-whitespace)
+	     (return (values (length (second prod)) start t))
+	     (return (values nil nil "Too much whitespace on blank line")))
+      finally (return (values nil nil "Unable to detect indentation"))))
 
 (defrule ns-dec-digit-positive
     (and
@@ -1330,7 +1335,10 @@
       ,(prule 'l-nb-literal-text n)
       (* ,(prule 'b-nb-literal-next n))
       ,(prule 'b-chomped-last tee)))
-    ,(prule 'l-chomped-empty n tee)))
+    ,(prule 'l-chomped-empty n tee))
+  (:lambda (x)
+    (print n)
+    x))
 
 ;;rule 174
 (define-parameterized-rule c-l+folded (n)
@@ -1745,6 +1753,8 @@
 
 (defparameter *tag* nil)
 
+(defparameter *anchors* nil)
+
 (defun process-document-like-cl-yaml (doc)
   (trivia:match doc
     ((type string) (parse-scalar doc))
@@ -1757,11 +1767,15 @@
      (loop for item in rest
 	collect (process-document-like-cl-yaml item)))
     (`((properties ,@x) ,y)
-      (let ((*tag* (make-keyword (cadr (find 'tag x :key #'car))))
-	    (x (remove 'tag x :key #'car)))
+      (let* ((*tag* (make-keyword (cadr (find 'tag x :key #'car))))
+	     (x (remove 'tag x :key #'car))
+	     (anchor (cadr (find 'anchor x :key #'car)))
+	     (x (remove 'anchor x :key #'car)))
 	(unless (emptyp x)
 	  (warn "Ignoring properties ~A" x))
-	(process-document-like-cl-yaml y)))
+	(let ((value (process-document-like-cl-yaml y)))
+	  (when anchor (push (cons anchor value) *anchors*))
+	  value)))
     ((cons 'map rest)
      (loop with result = (make-hash-table :test 'equal)
 	for item in rest
@@ -1771,10 +1785,16 @@
 		    (process-document-like-cl-yaml value)))
 	     (_ (error "non-entry inside map")))
 	finally (return result)))
+    (`(alias ,name)
+      (let ((anchor (assoc name *anchors* :test #'string=)))
+	(if anchor
+	    (cdr anchor)
+	    (error "Unknown alias ~A" name))))
     (x (error "Unexpected parse tree ~A" x))))
 
 (defun parse-like-cl-yaml (input &key multi-document-p)
-  (let ((parsed (parse-no-schema input)))
+  (let ((parsed (parse-no-schema input))
+	(*anchors* nil))
     (trivia:match parsed
       ((cons 'documents docs)
        (assert (or (= (length docs) 1) multi-document-p))
