@@ -984,7 +984,7 @@
     (destructuring-bind (key value)
 	stuff
 	`(entry ,key
-		,(if (eql value 'null)
+		,(if (eql value 'yaml-null)
 		     value
 		     (second value))))))
 
@@ -1658,7 +1658,7 @@
 
 ;;rule 208
 (defrule empty-document (and e-node s-l-comments)
-  (:constant 'null))
+  (:constant '(nil yaml-null)))
 
 (defrule l-explicit-document
     (and c-directives-end
