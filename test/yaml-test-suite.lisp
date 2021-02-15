@@ -19,8 +19,8 @@
 			     (with-open-file (f ,json)
 			      (loop for x = (handler-case
 						(yason:parse f)
-					      (end-of-file () nil))
-				    while x collect x))
+					      (end-of-file () 'eof))
+				    until (eql x 'eof) collect x))
 			     (cdr (nyaml::parse-yaml-file ,yaml :multi-document-p t))))))
 	       ((uiop:file-exists-p (uiop:merge-pathnames* "error" item))
 		(list `(define-test ,name
