@@ -1055,7 +1055,9 @@
      ""
     ,(prule 'ns-flow-pair-entry n c)))
   (:lambda (x)
-    `(map (entry ,@(third x)))))
+    (if (eql 'entry (car (third x)))
+    `(map (entry ,@(cdr (third x))))
+    `(map (entry ,@(third x))))))
 
 ;;rule 151
 (define-parameterized-rule ns-flow-pair-entry (n c)
