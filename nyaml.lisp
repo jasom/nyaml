@@ -1293,12 +1293,15 @@
 (define-parameterized-rule l-keep-empty (n)
   `(and
     (* ,(prule 'l-empty n :block-in))
-    (? ,(prule 'l-trail-comments n))))
+    (? ,(prule 'l-trail-comments n)))
+  (:destructure (keep _)
+		(declare (ignore _))
+		keep))
 
 ;;rule 169
 (define-parameterized-rule l-trail-comments (n)
   `(and
-    ,(prule 's-indent-<= n)
+    ,(prule 's-indent-< n)
     c-nb-comment-text
     b-comment
     l-comment-*))
