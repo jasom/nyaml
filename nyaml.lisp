@@ -1375,10 +1375,11 @@
 (define-parameterized-rule s-nb-spaced-text (n)
   `(and
     ,(prule 's-indent n)
+    s-white
     (* nb-char))
-  (:destructure (indent text)
+  (:destructure (indent space text)
 		(declare (ignore indent))
-		(text text)))
+		(text (list space text))))
 
 ;;rule 178
 (define-parameterized-rule b-l-spaced (n)
