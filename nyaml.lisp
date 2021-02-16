@@ -511,12 +511,10 @@
 	   s-white))
 	 ns-directive-name
 	 (* (and s-separate-in-line ns-directive-parameter)))
-  (:destructure (_ name args &bounds start)
+  (:destructure (_ name args)
     (declare (ignore _))
-    (funcall *warning*
-	     "Unrecognized directive ~A at position ~a"
-	     (text name) start)
-    `(directive ,(text name) ,@(loop for (_ arg) on args by #'cddr collect arg))))
+    (print args)
+    `(reserved ,(make-keyword (text name)) ,@(loop for (_ arg) in args collect (text arg)))))
 
 ;; rule 84
 (defrule ns-directive-name (+ ns-char))
@@ -1783,6 +1781,9 @@
     (`((directive (yaml ,version)) ,@rest)
       (unless (string= version "1.2")
 	(warn "Parsing document version ~a as if it were 12" version))
+      (process-document-like-cl-yaml doc rest))
+    (`((directive (reserved ,name ,@args)) ,@rest)
+      (warn "ignoring reserved directive ~a with args ~a" name args)
       (process-document-like-cl-yaml doc rest))
     (nil
      (trivia:match doc
