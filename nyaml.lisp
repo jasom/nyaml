@@ -1599,15 +1599,24 @@
     (?
      (and
       ,(prule 's-separate (1+ n) c)
-      ,(prule 'c-ns-properties (1+ n) c)
-      (& s-l-comments)))
+      ;;N.B see https://github.com/yaml/yaml-reference-parser/blob/master/build/yaml-spec-1.2.patch
+      ;;TODO destructure properly
+      (or
+       (and ,(prule 'c-ns-properties (1+ n) c) s-l-comments)
+       (and c-ns-tag-property s-l-comments)
+       (and c-ns-anchor-property) s-l-comments)
+       (& s-l-comments)))
     s-l-comments
     (or
      ,(prule 'l+block-sequence (seq-spaces n c))
      ,(prule 'l+block-mapping n)))
-  (:destructure (props comments sequence)
+  (:destructure ((_1 (props &rest _2) _3) comments sequence)
 		(declare (ignore comments))
-		(if props (list (second props) sequence) sequence)))
+		(if (and props (listp props))
+		      (if (eql (car props) 'properties)
+			  (list props sequence)
+			  `((properties ,props) ,sequence))
+		    sequence)))
 
 
 ;; rule 201
