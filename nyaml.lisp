@@ -1838,7 +1838,9 @@
        (if multi-document-p
 	   (cons :documents
 		 (loop for (prefix meat) in docs
-		    collect (process-document-like-cl-yaml meat prefix)))
+		       for d in docs
+		       when d
+			 collect (process-document-like-cl-yaml meat prefix)))
 	   (process-document-like-cl-yaml (cadar docs))))
       (x (error "Unexpected parse tree ~a" x)))))
 
