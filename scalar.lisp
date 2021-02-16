@@ -51,7 +51,7 @@
 (defun parse-scalar (string)
   "Parse a YAML scalar string into a Lisp scalar value."
   (cond
-    ((eql *tag* :|str|)
+    ((eql *tag* :|tag:yaml.org,2002:str|)
      string)
     ;; Null
     ((member string +null-names+ :test #'equal)

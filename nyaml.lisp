@@ -613,15 +613,15 @@
      "!<"
      (+ ns-uri-char)
      ">")
-  (:text t))
+  (:lambda (x)
+    `(tag ,(text (second x)))))
 
 ;; rule 99
 ;; TODO resolve tags
 (defrule c-ns-shorthand-tag
     (and c-tag-handle (+ ns-tag-char))
-  (:destructure (_ tag-name)
-    (declare (ignore _))
-    `(tag ,(text tag-name))))
+  (:destructure (tag-handle tag-name)
+    `(tag ,(text tag-handle) ,(text tag-name))))
 
 ;;rule 100
 (defrule c-non-specific-tag "!"
@@ -1757,19 +1757,32 @@
 
 (defparameter *anchors* nil)
 
+(defparameter *tag-handle* '(("!" . "!") ("!!" . "tag:yaml.org,2002:")))
+
+(defun process-tag (tag)
+  (trivia:match tag
+    (`(tag ,handle ,name)
+      (let ((decoded-handle (assoc handle *tag-handle* :test #'string=)))
+	(unless decoded-handle (error 'parse-error))
+      (make-keyword (format nil "~A~A" (cdr decoded-handle) name))))
+    (`(tag ,name)
+      (make-keyword name))
+    (nil nil)
+    (_ (error 'parse-error))))
+
 (defun process-document-like-cl-yaml (doc)
   (trivia:match doc
     ((type string) (parse-scalar doc))
     ('yaml-null
      (case *tag*
        (nil nil)
-       (:|str| "")
+       (:|tag:yaml.org,2002:str| "")
        (t (warn "Uknown tag ~A" *tag*))))
     ((cons 'seq rest)
      (loop for item in rest
 	collect (process-document-like-cl-yaml item)))
     (`((properties ,@x) ,y)
-      (let* ((*tag* (make-keyword (cadr (find 'tag x :key #'car))))
+      (let* ((*tag* (process-tag (find 'tag x :key #'car)))
 	     (x (remove 'tag x :key #'car))
 	     (anchor (cadr (find 'anchor x :key #'car)))
 	     (x (remove 'anchor x :key #'car)))
@@ -1848,4 +1861,3 @@
 			   :utf-16le))
 		    (t :utf-8))))))
       (parse-like-cl-yaml (babel:octets-to-string b :encoding encoding) :multi-document-p multi-document-p))))
-	
