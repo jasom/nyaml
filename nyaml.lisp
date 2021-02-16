@@ -599,8 +599,9 @@
     (and
      c-ns-anchor-property
      (? (and ,(prule 's-separate n c) c-ns-tag-property))))
-  (:lambda (x)
-    `(properties ,@(remove nil x))))
+  (:destructure (prop1 prop2)
+    (print prop2)
+    `(properties ,prop1 ,@(cdr prop2))))
 
 
 ;; rule 97
