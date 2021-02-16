@@ -1050,7 +1050,12 @@
      #\?
      ,(prule 's-separate n c)
      ,(prule 'ns-flow-map-explicit-entry n c))
+    (and
+     ""
+     ""
     ,(prule 'ns-flow-pair-entry n c)))
+  (:lambda (x)
+    `(map (entry ,@(third x)))))
 
 ;;rule 151
 (define-parameterized-rule ns-flow-pair-entry (n c)
