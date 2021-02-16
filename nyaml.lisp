@@ -1610,13 +1610,14 @@
     (or
      ,(prule 'l+block-sequence (seq-spaces n c))
      ,(prule 'l+block-mapping n)))
-  (:destructure ((_1 (props &rest _2) _3) comments sequence)
+  (:destructure (props comments sequence)
 		(declare (ignore comments))
-		(if (and props (listp props))
-		      (if (eql (car props) 'properties)
-			  (list props sequence)
-			  `((properties ,props) ,sequence))
-		    sequence)))
+		(trivia:match props
+		  (`(,_ ((properties ,x) ,@_) ,@_)
+		    `((properties ,x) ,sequence))
+		  (`(,_ ((,x) ,@_) ,@_)
+		    `(((properties (,x))) ,sequence))
+		  (_  sequence))))
 
 
 ;; rule 201
