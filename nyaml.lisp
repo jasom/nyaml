@@ -548,10 +548,13 @@
 (defrule ns-tag-directive
     (and
      "TAG"
-     s-separate-in-line c-tag-handle
-     s-separate-in-line ns-tag-prefix)
-  ;;TODO establish a tag
-  )
+     s-separate-in-line
+     c-tag-handle
+     s-separate-in-line
+     ns-tag-prefix)
+  (:destructure (_1 _2 handle _3 prefix)
+    (declare (ignore _1 _2 _3))
+    `(tag ,(text handle) ,(text prefix))))
 
 ;; rule 89
 (defrule c-tag-handle
@@ -1770,42 +1773,48 @@
     (nil nil)
     (_ (error 'parse-error))))
 
-(defun process-document-like-cl-yaml (doc)
-  (trivia:match doc
-    ((type string) (parse-scalar doc))
-    ('yaml-null
-     (case *tag*
-       (nil nil)
-       (:|tag:yaml.org,2002:str| "")
-       (t (warn "Uknown tag ~A" *tag*))))
-    ((cons 'seq rest)
-     (loop for item in rest
-	collect (process-document-like-cl-yaml item)))
-    (`((properties ,@x) ,y)
-      (let* ((*tag* (process-tag (find 'tag x :key #'car)))
-	     (x (remove 'tag x :key #'car))
-	     (anchor (cadr (find 'anchor x :key #'car)))
-	     (x (remove 'anchor x :key #'car)))
-	(unless (emptyp x)
-	  (warn "Ignoring properties ~A" x))
-	(let ((value (process-document-like-cl-yaml y)))
-	  (when anchor (push (cons anchor value) *anchors*))
-	  value)))
-    ((cons 'map rest)
-     (loop with result = (make-hash-table :test 'equal)
-	for item in rest
-	do (trivia:match item
-	     ((list 'entry key value)
-	      (setf (gethash (process-document-like-cl-yaml key) result)
-		    (process-document-like-cl-yaml value)))
-	     (_ (error "non-entry inside map")))
-	finally (return result)))
-    (`(alias ,name)
-      (let ((anchor (assoc name *anchors* :test #'string=)))
-	(if anchor
-	    (cdr anchor)
-	    (error "Unknown alias ~A" name))))
-    (x (error "Unexpected parse tree ~A" x))))
+(defun process-document-like-cl-yaml (doc &optional prefix)
+  (trivia:match prefix
+    (`((directive (tag ,handle ,prefix)) ,@rest)
+	(let ((*tag-handle* (cons (cons handle prefix) *tag-handle*)))
+	  (process-document-like-cl-yaml doc rest)))
+    (nil
+     (trivia:match doc
+       ((type string) (parse-scalar doc))
+       ('yaml-null
+	(case *tag*
+	  (nil nil)
+	  (:|tag:yaml.org,2002:str| "")
+	  (t (warn "Uknown tag ~A" *tag*))))
+       ((cons 'seq rest)
+	(loop for item in rest
+	      collect (process-document-like-cl-yaml item)))
+       (`((properties ,@x) ,y)
+	 (let* ((*tag* (process-tag (find 'tag x :key #'car)))
+		(x (remove 'tag x :key #'car))
+		(anchor (cadr (find 'anchor x :key #'car)))
+		(x (remove 'anchor x :key #'car)))
+	   (unless (emptyp x)
+	     (warn "Ignoring properties ~A" x))
+	   (let ((value (process-document-like-cl-yaml y)))
+	     (when anchor (push (cons anchor value) *anchors*))
+	     value)))
+       ((cons 'map rest)
+	(loop with result = (make-hash-table :test 'equal)
+	      for item in rest
+	      do (trivia:match item
+		   ((list 'entry key value)
+		    (setf (gethash (process-document-like-cl-yaml key) result)
+			  (process-document-like-cl-yaml value)))
+		   (_ (error "non-entry inside map")))
+	      finally (return result)))
+       (`(alias ,name)
+	 (let ((anchor (assoc name *anchors* :test #'string=)))
+	   (if anchor
+	       (cdr anchor)
+	       (error "Unknown alias ~A" name))))
+       (x (error "Unexpected parse tree ~A" x))))
+    (t (error "Unknown document prefix ~A" prefix))))
 
 (defun parse-like-cl-yaml (input &key multi-document-p)
   (let ((parsed (parse-no-schema input))
@@ -1816,7 +1825,7 @@
        (if multi-document-p
 	   (cons :documents
 		 (loop for (prefix meat) in docs
-		    collect (process-document-like-cl-yaml meat)))
+		    collect (process-document-like-cl-yaml meat prefix)))
 	   (process-document-like-cl-yaml (cadar docs))))
       (x (error "Unexpected parse tree ~a" x)))))
 
