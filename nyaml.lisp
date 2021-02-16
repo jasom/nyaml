@@ -529,7 +529,9 @@
     (and "YAML"
 	 s-separate-in-line
 	 ns-yaml-version)
-  (:text t))
+  (:destructure (_1 _2 version)
+    (declare (ignore _1 _2))
+    `(yaml ,(text version))))
 
 ;; rule 87
 (defrule ns-yaml-version
@@ -1778,6 +1780,10 @@
     (`((directive (tag ,handle ,prefix)) ,@rest)
 	(let ((*tag-handle* (cons (cons handle prefix) *tag-handle*)))
 	  (process-document-like-cl-yaml doc rest)))
+    (`((directive (yaml ,version)) ,@rest)
+      (unless (string= version "1.2")
+	(warn "Parsing document version ~a as if it were 12" version))
+      (process-document-like-cl-yaml doc rest))
     (nil
      (trivia:match doc
        ((type string) (parse-scalar doc))
@@ -1814,7 +1820,7 @@
 	       (cdr anchor)
 	       (error "Unknown alias ~A" name))))
        (x (error "Unexpected parse tree ~A" x))))
-    (t (error "Unknown document prefix ~A" prefix))))
+    (x (error "Unknown document prefix ~A" x))))
 
 (defun parse-like-cl-yaml (input &key multi-document-p)
   (let ((parsed (parse-no-schema input))
