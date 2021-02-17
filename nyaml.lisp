@@ -621,7 +621,6 @@
     `(tag ,(text (second x)))))
 
 ;; rule 99
-;; TODO resolve tags
 (defrule c-ns-shorthand-tag
     (and c-tag-handle (+ ns-tag-char))
   (:destructure (tag-handle tag-name)
@@ -629,7 +628,7 @@
 
 ;;rule 100
 (defrule c-non-specific-tag "!"
-  (:constant (list "!" nil)))
+  (:constant '(tag nonspecific)))
 
 ;;rule 101
 (defrule c-ns-anchor-property
@@ -717,7 +716,7 @@
   (:lambda (stuff)
     (destructuring-bind (sq meat eq) stuff
       (declare (ignore sq eq))
-      (text meat))))
+      `(dq-string ,(text meat)))))
 
 ;; rule 111
 (defrule nb-double-one-line
@@ -1463,12 +1462,19 @@
   
 (define-parameterized-rule s-l+block-indented (n c)
   (let ((m (spaces-from-position input position end)))
-  `(or
-    ,(if (> m 0)
-	(prule 'compact-helper n m)
-	'(or))
-    ,(prule 's-l+block-node n c)
-    (and e-node s-l-comments))))
+    `(or
+      ,(if (> m 0)
+	   `(and
+	     ,(prule 'compact-helper n m)
+	    (and))
+	   '(or))
+      (and
+       ,(prule 's-l+block-node n c)
+       (and))
+      (and e-node s-l-comments)))
+  (:destructure (meat _)
+		(declare (ignore _))
+		meat))
 
 ;; rule 186
 (define-parameterized-rule ns-l-compact-sequence (n)
@@ -1786,6 +1792,7 @@
 
 (defun process-tag (tag)
   (trivia:match tag
+    ('(tag nonspecific) 'nonspecific)
     (`(tag ,handle ,name)
       (let ((decoded-handle (assoc handle *tag-handle* :test #'string=)))
 	(unless decoded-handle (error 'parse-error))
@@ -1815,6 +1822,7 @@
     (nil
      (trivia:match doc
        ((type string) (parse-scalar doc))
+       (`(dq-string ,x) x)
        ('yaml-null
 	(case *tag*
 	  (nil nil)
