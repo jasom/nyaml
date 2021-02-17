@@ -1158,8 +1158,11 @@
       ,(prule 'c-ns-properties n c)
       ,(prule 's-separate n c)))
     ,(prule 'c-flow-json-content n c))
-  ;; TODO actually save properties
-  (:function second))
+  (:destructure (props meat)
+		(if props
+		    `(,(car props) ,meat)
+		    meat)))
+
 
 ;; rule 161
 (define-parameterized-rule ns-flow-node (n c)
@@ -1607,7 +1610,11 @@
     (or
      ,(prule 'c-l+literal n)
      ,(prule 'c-l+folded n)))
-  (:function third))
+  (:destructure (_ props meat)
+		(declare (ignore _))
+	(if props
+	    `(,(car props) ,meat)
+	    meat)))
 
 ;;rule 200
 (define-parameterized-rule s-l+block-collection (n c) 
@@ -1616,7 +1623,6 @@
      (and
       ,(prule 's-separate (1+ n) c)
       ;;N.B see https://github.com/yaml/yaml-reference-parser/blob/master/build/yaml-spec-1.2.patch
-      ;;TODO destructure properly
       (or
        (and ,(prule 'c-ns-properties (1+ n) c) s-l-comments)
        (and c-ns-tag-property s-l-comments)
