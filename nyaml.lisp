@@ -513,7 +513,6 @@
 	 (* (and s-separate-in-line ns-directive-parameter)))
   (:destructure (_ name args)
     (declare (ignore _))
-    (print args)
     `(reserved ,(make-keyword (text name)) ,@(loop for (_ arg) in args collect (text arg)))))
 
 ;; rule 84
@@ -600,7 +599,7 @@
      c-ns-anchor-property
      (? (and ,(prule 's-separate n c) c-ns-tag-property))))
   (:destructure (prop1 prop2)
-    (print prop2)
+    ;;(print prop2)
     `(properties ,prop1 ,@(cdr prop2))))
 
 
@@ -730,7 +729,8 @@
     b-non-content
     (* ,(prule 'l-empty n :flow-in))
     ,(prule 's-flow-line-prefix n))
-  (:constant ""))
+  (:lambda (x)
+    (car x)))
 
 ;; rule 113
 (define-parameterized-rule s-double-break (n) 
@@ -1207,33 +1207,38 @@
     (when (second result) (+ n (second result)))))
 
 (defun auto-detect-indentation (input start end)
-  (loop
-    with prod
-    with position
-    with result
-    with last-start = start
-    with most-whitespace = 0
-    for possible-start = (if (= start 0)
-			     0 ;(1- start)
-			     (position-if (rcurry #'member '(#\Newline #\Return)) input
-					  :start (1- start)))
-      then (position-if (rcurry #'member '(#\Newline #\Return)) input
-			:start (1+ possible-start))
-    while possible-start
-    do (setf most-whitespace (max most-whitespace (- possible-start last-start 1))
-	     last-start  possible-start) ; the -1 is to account for newline
-    when (not (or (= possible-start 0) (member (elt input possible-start) '(#\Newline #\Return))))
-      return (values nil nil "Unable to detect indentation 2")
-    do (setf (values prod position result)
-	     (esrap:parse 'indent-level-helper
-			  input :start possible-start
-			  :end end :junk-allowed t))
-       ;; do (format t "~&~S ~S ~S ~S~%" possible-start prod position result)
-    when result
-      do (if (>= (length (second prod)) most-whitespace)
-	     (return (values (length (second prod)) start t))
-	     (return (values nil nil "Too much whitespace on blank line")))
-      finally (return (values nil nil "Unable to detect indentation"))))
+  (let ((original-start start))
+    (multiple-value-bind (_ newstart success)
+	(esrap:parse 's-b-comment input :start start :end end :junk-allowed t)
+      (declare (ignorable _))
+      (when (and success newstart) (setf start newstart)))
+    (loop
+      with prod
+      with position
+      with result
+      with last-start = start
+      with most-whitespace = 0
+      for possible-start = (if (= start 0)
+			       0 ;(1- start)
+			       (position-if (rcurry #'member '(#\Newline #\Return)) input
+					    :start (1- start)))
+	then (position-if (rcurry #'member '(#\Newline #\Return)) input
+			  :start (1+ possible-start))
+      while possible-start
+      do (setf most-whitespace (max most-whitespace (- possible-start last-start 1))
+	       last-start  possible-start) ; the -1 is to account for newline
+      when (not (or (= possible-start 0) (member (elt input possible-start) '(#\Newline #\Return))))
+	return (values nil nil "Unable to detect indentation 2")
+      do (setf (values prod position result)
+	       (esrap:parse 'indent-level-helper
+			    input :start possible-start
+			    :end end :junk-allowed t))
+	 ;; do (format t "~&~S ~S ~S ~S~%" possible-start prod position result)
+      when result
+	do (if (>= (length (second prod)) most-whitespace)
+	       (return (values (length (second prod)) original-start t))
+	       (return (values nil nil "Too much whitespace on blank line")))
+      finally (return (values nil nil "Unable to detect indentation")))))
 
 (defrule ns-dec-digit-positive
     (and
@@ -1315,9 +1320,8 @@
     (let ((m (getf production 'indent))
 	  (tee (getf production 'chomp)))
       (princ m) (princ tee) (terpri)
-      (when (<= m 0)
-	(return-from block-header-then
-	  (values nil start)))
+      (when (<= m 0)			; hack to handle cases with all blank lines
+	(setf m 1))
       (funcall next input position end (+ n m) tee))))
 
 (define-parameterized-rule c-l+literal (n)
