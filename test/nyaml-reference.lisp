@@ -1,3 +1,7 @@
+;;; These tests were takin from the YAML reference parser As they are
+;;; unit tests they do not 100% match the behavior of NYAML The tests
+;;; were disabled with 19/928 failing as they have served their
+;;; purpose
 (in-package :nyaml-test)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)

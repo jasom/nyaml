@@ -25,5 +25,5 @@
   :components ((:module "test"
 		:components
 		((:file "test")
-		 (:file "nyaml-reference")
+		 #+(or)(:file "nyaml-reference")
 		 (:file "yaml-test-suite")))))
