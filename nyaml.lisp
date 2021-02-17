@@ -1795,6 +1795,8 @@
     (nil nil)
     (_ (error 'parse-error))))
 
+(defvar *yaml-directive* nil)
+
 (defun process-document-like-cl-yaml (doc &optional prefix)
   (trivia:match prefix
     (`((directive (tag ,handle ,prefix)) ,@rest)
@@ -1803,7 +1805,10 @@
     (`((directive (yaml ,version)) ,@rest)
       (unless (string= version "1.2")
 	(warn "Parsing document version ~a as if it were 12" version))
-      (process-document-like-cl-yaml doc rest))
+      (when *yaml-directive*
+	(error "Multiple YAML directives in a single document"))
+      (let ((*yaml-directive* t))
+      (process-document-like-cl-yaml doc rest)))
     (`((directive (reserved ,name ,@args)) ,@rest)
       (warn "ignoring reserved directive ~a with args ~a" name args)
       (process-document-like-cl-yaml doc rest))
@@ -1857,7 +1862,7 @@
 		       for d in docs
 		       when d
 			 collect (process-document-like-cl-yaml meat prefix)))
-	   (process-document-like-cl-yaml (cadar docs))))
+	   (process-document-like-cl-yaml (cadar docs) (caar docs))))
       (x (error "Unexpected parse tree ~a" x)))))
 
 (defun slurp-bytes (stream)
