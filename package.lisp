@@ -4,5 +4,6 @@
   (:use #:cl
 	#:esrap
 	#:alexandria)
-  (:shadow "PARSE"))
+  (:shadow "PARSE")
+  (:export "PARSE" "*NULL*" "*FALSE*" "*MAKE-MAP*" "*MAP-INSERT*" "*LIST-TO-SEQ*"))
 

@@ -1,6 +1,8 @@
 (in-package "NYAML")	
 (named-readtables:in-readtable :fare-quasiquote)
 
+(defgeneric parse (input &key multi-document-p))
+
 (defun parse-no-schema (input)
   (let ((input (concatenate 'string (string #\Newline) input)))
     (esrap:parse 'l-yaml-stream input)))
@@ -85,7 +87,13 @@
        (x (error "Unexpected parse tree ~A" x))))
     (x (error "Unknown document prefix ~A" x))))
 
-(defun parse (input &key multi-document-p)
+(defun slurp-bytes (stream)
+  (let ((v (make-array 0 :element-type '(unsigned-byte 8) :adjustable t :fill-pointer 0)))
+    (loop for b = (read-byte stream nil nil)
+	  while b do (vector-push-extend b v))
+    v))
+
+(defmethod parse ((input string) &key multi-document-p)
   (let ((parsed (parse-no-schema input))
 	(*anchors* nil))
     (trivia:match parsed
@@ -100,44 +108,53 @@
 	   (process-document (cadar docs) (caar docs))))
       (x (error "Unexpected parse tree ~a" x)))))
 
-(defun slurp-bytes (stream)
-  (let ((v (make-array 0 :element-type '(unsigned-byte 8) :adjustable t :fill-pointer 0)))
-    (loop for b = (read-byte stream nil nil)
-	  while b do (vector-push-extend b v))
-    v))
+(defmethod parse ((input stream) &key multi-document-p)
+  (if (subtypep (stream-element-type input) 'character)
+      (parse (uiop:slurp-input-stream :string input) :multi-document-p multi-document-p)
+      (parse (slurp-bytes input) :multi-document-p multi-document-p)))
 
 (defun eltn (seq n)
   (when (> (length seq) n)
     (elt seq n)))
 
-(defun parse-yaml-file (pathname &key multi-document-p)
-  (with-open-file (f pathname :element-type '(unsigned-byte 8))
-    (let* ((b (slurp-bytes f))
-	   (encoding
-	     (case (eltn b 0)
-	       (0 (case (eltn b 1)
+(defmethod parse ((input vector) &key multi-document-p)
+  (let ((encoding
+	     (case (eltn input 0)
+	       (0 (case (eltn input 1)
 		    (0 :utf-32be)
 		    (t :utf-16be)))
-	       (#xff  (case (eltn b 1)
+	       (#xff  (case (eltn input 1)
 			(#xfe 
-			 (if (and (zerop (eltn b 2))
-				  (zerop (eltn b 3)))
+			 (if (and (zerop (eltn input 2))
+				  (zerop (eltn input 3)))
 			     :utf-32le
 			     :utf-16le))
 			(t :utf-8)))
-	       (#xfe (case (eltn b 1)
+	       (#xfe (case (eltn input 1)
 		       (#xff (if (and
-				  (zerop (eltn b 2))
-				  (zerop (eltn b 3)))
+				  (zerop (eltn input 2))
+				  (zerop (eltn input 3)))
 				 :utf-32be
 				 :utf-16be))
 		       (t :utf-8)))
 	       (#xef :utf-8)
-	       (t (case (eltn b 1)
+	       (t (case (eltn input 1)
 		    (0 (if (and
-			    (zerop (eltn b 2))
-			    (zerop (eltn b 3)))
+			    (zerop (eltn input 2))
+			    (zerop (eltn input 3)))
 			   :utf-32le
 			   :utf-16le))
 		    (t :utf-8))))))
-      (parse (babel:octets-to-string b :encoding encoding) :multi-document-p multi-document-p))))
+    (parse (babel:octets-to-string input :encoding encoding) :multi-document-p multi-document-p)))
+      
+
+(defmethod parse ((input pathname) &key multi-document-p)
+  (with-open-file (f input :element-type '(unsigned-byte 8))
+    (parse f :multi-document-p multi-document-p)))
+
+
+(defmacro with-cl-yaml-semantics (() &body b)
+  `(let ((*null* nil)
+	 (*false* nil)
+	 (*list-to-seq* #'identity))
+     ,@b))

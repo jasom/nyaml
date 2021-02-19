@@ -22,7 +22,7 @@
   :description "Tests for NYAML"
   :author "Jason Miller <aidenn0@geocities.com>"
   :license "MIT/X11"
-  :depends-on (#:esrap #:alexandria #:split-sequence #:nyaml #:parachute #:yason)
+  :depends-on (#:esrap #:alexandria #:split-sequence #:nyaml #:parachute #:yason #:cl-yaml)
   :serial t
   :components ((:module "test"
 		:components

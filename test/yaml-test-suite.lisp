@@ -23,7 +23,7 @@
 						  (yason:parse f))
 					      (end-of-file () 'eof))
 				    until (eql x 'eof) collect x))
-			     (cdr (nyaml::parse-yaml-file ,yaml :multi-document-p t))))))
+			     (cdr (nyaml::parse ,yaml :multi-document-p t))))))
 	       ((uiop:file-exists-p (uiop:merge-pathnames* "error" item))
 		(list `(define-test ,name
 			  (fail (nyaml::parse-yaml-file ,yaml)))))
