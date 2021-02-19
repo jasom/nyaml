@@ -42,7 +42,6 @@
 
 (defun parse-scalar (string)
   "Parse a YAML scalar string into a Lisp scalar value."
-  (print *tag*)
   (cond
     ((eql *tag* :|tag:yaml.org,2002:str|)
      string)

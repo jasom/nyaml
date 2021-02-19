@@ -45,13 +45,15 @@
        (`(dq-string ,x) x)
        ('yaml-null
 	(case *tag*
-	  (nil *null*)
+	  ((nil) *null*)
+	  ;(:|tag:yaml.org,2002:str| "")
 	  (:|tag:yaml.org,2002:str| "")
-	  (t (warn "Uknown tag ~A" *tag*))))
+	  (t (warn "Unknown tag ~A" *tag*))))
        ((cons 'seq rest)
-	(funcall *list-to-seq*
-		 (loop for item in rest
-		       collect (process-document item))))
+	(let (*tag*)
+	  (funcall *list-to-seq*
+		   (loop for item in rest
+			 collect (process-document item)))))
        (`((properties ,@x) ,y)
 	 (let* ((*tag* (process-tag (find 'tag x :key #'car)))
 		(x (remove 'tag x :key #'car))
@@ -63,17 +65,18 @@
 	     (when anchor (push (cons anchor value) *anchors*))
 	     value)))
        ((cons 'map rest)
-	(loop with result = (funcall *make-map*)
-	      for item in rest
-	      do (trivia:match item
-		   ((list 'entry key value)
-		    (setf result
-			  (funcall *map-insert*
-			     result 
-			     (process-document key)
-			     (process-document value))))
-		   (_ (error "non-entry inside map")))
-	      finally (return result)))
+	(let (*tag*)
+	  (loop with result = (funcall *make-map*)
+		for item in rest
+		do (trivia:match item
+		     ((list 'entry key value)
+		      (setf result
+			    (funcall *map-insert*
+				     result 
+				     (process-document key)
+				     (process-document value))))
+		     (_ (error "non-entry inside map")))
+		finally (return result))))
        (`(alias ,name)
 	 (let ((anchor (assoc name *anchors* :test #'string=)))
 	   (if anchor
