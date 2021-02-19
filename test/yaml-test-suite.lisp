@@ -18,7 +18,9 @@
 			 (is equalp
 			     (with-open-file (f ,json)
 			      (loop for x = (handler-case
-						(yason:parse f)
+						(let ((yason:*parse-json-arrays-as-vectors* t)
+						      (yason:*parse-json-null-as-keyword* t))
+						  (yason:parse f))
 					      (end-of-file () 'eof))
 				    until (eql x 'eof) collect x))
 			     (cdr (nyaml::parse-yaml-file ,yaml :multi-document-p t))))))

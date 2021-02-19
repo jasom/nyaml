@@ -5,14 +5,6 @@
 
 (in-package :nyaml)
 
-;;; Constants
-
-(defparameter +null+ nil
-  "The NULL constant. Nil by default.")
-
-(defparameter +false+ nil
-  "The falsehood constant. Nil by default.")
-
 ;;; Regular expressions or lists of names
 
 (defparameter +null-names+
@@ -58,12 +50,12 @@
      string)
     ;; Null
     ((member string +null-names+ :test #'equal)
-     +null+)
+     *null*)
     ;; Truth and falsehood
     ((member string +true-names+ :test #'equal)
      t)
     ((member string +false-names+ :test #'equal)
-     +false+)
+     *false*)
     ;; Integers
     ((ppcre:scan +integer-scanner+ string)
      (parse-integer string))

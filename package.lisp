@@ -3,5 +3,6 @@
 (defpackage #:nyaml
   (:use #:cl
 	#:esrap
-	#:alexandria))
+	#:alexandria)
+  (:shadow "PARSE"))
 
