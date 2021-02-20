@@ -1,9 +1,10 @@
 ;;;; nyaml.asd
 
 (asdf:defsystem #:nyaml
-  :description "ESRAP based YAML parser"
+  :description "Native YAML Parser"
   :author "Jason Miller <aidenn0@geocities.com>"
-  :license "MIT/X11"
+  :license "MIT"
+  :version "0.9.0"
   :in-order-to ((asdf:test-op (asdf:load-op "nyaml/test")))
   :perform (asdf:test-op (o c)
 			 (uiop:symbol-call "PARACHUTE" "TEST" "NYAML-TEST"))
@@ -21,8 +22,9 @@
 (asdf:defsystem #:nyaml/test
   :description "Tests for NYAML"
   :author "Jason Miller <aidenn0@geocities.com>"
-  :license "MIT/X11"
-  :depends-on (#:esrap #:alexandria #:split-sequence #:nyaml #:parachute #:yason #:cl-yaml)
+  :license "MIT"
+  :depends-on (#:esrap #:alexandria #:split-sequence #:nyaml
+		       #:parachute #:yason #:cl-yaml)
   :serial t
   :components ((:module "test"
 		:components
