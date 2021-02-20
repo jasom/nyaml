@@ -24,7 +24,7 @@
   :author "Jason Miller <aidenn0@geocities.com>"
   :license "MIT"
   :depends-on (#:esrap #:alexandria #:split-sequence #:nyaml
-		       #:parachute #:yason #:cl-yaml)
+		       #:parachute #:yason)
   :serial t
   :components ((:module "test"
 		:components
