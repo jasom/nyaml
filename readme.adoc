@@ -1,0 +1,97 @@
+= NYAML a Native YAML parser for Common Lisp
+:toc:
+
+This allows parsing https://yaml.org[YAML] documents without relying on libyaml.
+
+== API
+
+_Generic Function_ **PARSE**::
++
+Syntax::: **parse** _input `&key` multi-document-p_ => _parsed-document_
++
+Arguments and Values:::
++
+  ** _input_ A pathname or an input-stream or a string
+** _multi-document-p_ a boolean indicating if the input may contain multiple documents
++
+Description:::
++
+--
+**parse** consumes and parses the entire input as a YAML file.
+
+If _input_ is a string, it parses it as is.
+
+If _input_ is a stream with an element-type that is a subtype of
+character then the entire stream is parsed as a string.
+
+If _input_ is a stream of element-type '(unsigned-byte 8) the
+encoding is detected per the YAML specification, and then it is
+decoded and parsed as a string.
+--
+Mapping of YAML types to Lisp:::
+This is configurable (see below) but the default is:
++
+* `null` -> `:null`
+* `bool` -> `T` and `NIL`
+* `seq` -> `simple-vector`
+* `int` -> `integer`
+* `float` -> `double-float`; infinity and NaN depend on the Lisp
+implementation and may signal an error
+* `map` -> `hash-table` with test `equal`
+* `str` -> `string`
+
+_Variable_ **\*NULL***::
+  Initial Value::: `:NULL`
+  Description::: The value that null objects from YAML will be parsed as
+
+_Variable_ ** \*FALSE* **::
+  Initial Value::: `NIL`
+  Description::: The value that false boolean objects from YAML will be parsed as
+
+_Variable_ ** \*MAKE-MAP* **::
+  Initial Value::: A function that creates an empty hash-table with test of `cl:equal`
+  Description::: Called whenever a map is encountered in the YAML parse tree
+
+_Variable_ ** \*MAP-INSERT* **::
+Initial Value::: A function that inserts a key into a hash-table and returns the table
+Description:::
+A function with a lambda list of `(map key value)` that
+takes an existing _map_ created with `*make-map*`, and returns a
+new _map_ that includes a mapping from _key_ to _value_.  May
+modify the _map_ argument.
++
+This is called for every map entry encountered in the YAML parse tree
+
+_Variable_ ** \*LIST-TO-SEQ* **::
+Initial Value::: A function that coerces its argument to a `simple-vector`
+Description:::
+A function with a lambda list of `(list)` that takes a list of
+items and returns the sequence representation for that list.
++
+This is called once for every sequence in the YAML parse tree
+
+== Limitations
+
+* NYAML is not a streaming parser; it reads the entire stream into memory
+  before parsing and will parse all YAML documents in the stream at
+  once.
+* The entire stream must be valid YAML; NYAML cannot e.g. parse a
+  non-YAML file with a YAML header
+* Not all tag processing is currently implemented; tags are parsed,
+  but often ignored. (cl-yaml seems to ignore tags, FWIW)
+
+== Known Incompatibilities with cl-yaml
+
+* The default types for parsing objects are different; `[]`,
+  `null`, and `false` produce respectively as `#()`, `:null`,
+  and `nil`.  In cl-yaml they are all produce `nil`.  These are all
+  dynamically configurable and there is a convenience macro
+  `with-cl-yaml-semantics` that establishes a dynamic environment that
+  acts more like cl-yaml
+* Bare "-" characters inside flows are not parsed as scalars; some
+  YAML parsers (including libyaml) allow this, others do not.  The
+  specification seems pretty clear that it's disallowed.  An example
+  that is accepted by cl-yaml but not nyaml is `[-,-]`.
+* Empty documents are parsed as null rather than the empty-string.
+  This is currently not configurable, but could probably be made
+  configurable if it causes real-world problems.
