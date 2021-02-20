@@ -1,7 +1,7 @@
 = NYAML a Native YAML parser for Common Lisp
 :toc:
 
-This allows parsing https://yaml.org[YAML] documents without relying on libyaml.
+NYAML allows parsing https://yaml.org[YAML] documents without relying on libyaml.
 
 == API
 
