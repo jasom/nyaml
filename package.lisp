@@ -5,5 +5,6 @@
 	#:esrap
 	#:alexandria)
   (:shadow "PARSE")
-  (:export "PARSE" "*NULL*" "*FALSE*" "*MAKE-MAP*" "*MAP-INSERT*" "*LIST-TO-SEQ*"))
+  (:export "PARSE" "*NULL*" "*FALSE*" "*MAKE-MAP*" "*MAP-INSERT*" "*LIST-TO-SEQ*"
+           "*INDENT*" "*NEWLINE*" "*DOCUMENT-SEPARATOR*" "STRINGIFY" "DUMP"))
 
