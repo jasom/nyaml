@@ -17,7 +17,8 @@
 	       (:file "specials")
 	       (:file "process")
 	       (:file "float")
-	       (:file "scalar")))
+	       (:file "scalar")
+               (:file "stringify")))
 
 
 (asdf:defsystem #:nyaml/test
