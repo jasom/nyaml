@@ -13,6 +13,7 @@
   :serial t
   :components ((:file "package")
                (:file "nyaml")
+	       (:file "schema")
 	       (:file "specials")
 	       (:file "process")
 	       (:file "float")

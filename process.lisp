@@ -1,9 +1,10 @@
 (in-package "NYAML")	
 (named-readtables:in-readtable :fare-quasiquote)
 
-(defgeneric parse (input &key multi-document-p))
+(defgeneric parse (input &key schema multi-document-p))
 
 (defun parse-no-schema (input)
+  "Build parse tree of input"
   (let ((input (concatenate 'string (string #\Newline) input)))
     (esrap:parse 'l-yaml-stream input)))
 
@@ -93,9 +94,10 @@
 	  while b do (vector-push-extend b v))
     v))
 
-(defmethod parse ((input string) &key multi-document-p)
+(defmethod parse ((input string) &key (schema *default-schema*) multi-document-p)
   (let ((parsed (parse-no-schema input))
-	(*anchors* nil))
+	(*anchors* nil)
+	(*default-schema* schema))
     (trivia:match parsed
       ((cons 'documents docs)
        (assert (or (= (length docs) 1) multi-document-p))
@@ -108,16 +110,16 @@
 	   (process-document (cadar docs) (caar docs))))
       (x (error "Unexpected parse tree ~a" x)))))
 
-(defmethod parse ((input stream) &key multi-document-p)
+(defmethod parse ((input stream) &key (schema *default-schema*) multi-document-p)
   (if (subtypep (stream-element-type input) 'character)
-      (parse (uiop:slurp-input-stream :string input) :multi-document-p multi-document-p)
-      (parse (slurp-bytes input) :multi-document-p multi-document-p)))
+      (parse (uiop:slurp-input-stream :string input) :schema schema :multi-document-p multi-document-p)
+      (parse (slurp-bytes input) :schema schema :multi-document-p multi-document-p)))
 
 (defun eltn (seq n)
   (when (> (length seq) n)
     (elt seq n)))
 
-(defmethod parse ((input vector) &key multi-document-p)
+(defmethod parse ((input vector) &key (schema *default-schema*) multi-document-p)
   (let ((encoding
 	     (case (eltn input 0)
 	       (0 (case (eltn input 1)
@@ -145,12 +147,14 @@
 			   :utf-32le
 			   :utf-16le))
 		    (t :utf-8))))))
-    (parse (babel:octets-to-string input :encoding encoding) :multi-document-p multi-document-p)))
+    (parse (babel:octets-to-string input :encoding encoding)
+	   :schema schema
+	   :multi-document-p multi-document-p)))
       
 
-(defmethod parse ((input pathname) &key multi-document-p)
+(defmethod parse ((input pathname) &key (schema *default-schema*) multi-document-p)
   (with-open-file (f input :element-type '(unsigned-byte 8))
-    (parse f :multi-document-p multi-document-p)))
+    (parse f :schema schema :multi-document-p multi-document-p)))
 
 
 (defmacro with-cl-yaml-semantics (() &body b)
