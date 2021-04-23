@@ -46,6 +46,7 @@
      (trivia:match doc
        ((type string) (parse-scalar doc))
        (`(dq-string ,x) x)
+       (`(sq-string ,x) x)
        ('yaml-null
 	(case *tag*
 	  ((nil) *null*)

@@ -764,7 +764,7 @@
   (:lambda (stuff)
     (destructuring-bind (sq meat eq) stuff
       (declare (ignore sq eq))
-      (text meat))))
+      `(sq-string ,(text meat)))))
 
 ;;rule 121
 (define-parameterized-rule nb-single-text (n (c :flow-out :flow-in :block-key :flow-key))
