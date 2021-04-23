@@ -1,45 +1,27 @@
 ;;; scalar.lisp taken from Fernando Borretti's cl-yaml
 ;;; licensed under MIT/X11 license
-;;; Modified by Jason Miller 2015
+;;; Modified by Jason Miller 2015-2020
 ;;; Changes also usable under terms of MIT/X11 license
 
 (in-package :nyaml)
 
-;;; Regular expressions or lists of names
+(defun yaml-parse-number (scanner string radix)
+  "Parse a string as a number given a scanner and radix
 
-(defparameter +null-names+
-  (list "null" "Null" "NULL" "~"))
+First remove all parts from STRING that aren't in register groups for SCANNER
+Then remove underscores
+then parse what's left as an integer in the RADIX"
+  (multiple-value-bind (match regs)
+      (ppcre:scan-to-strings scanner string)
+    (declare (ignore match))
+    (print regs)
+    (parse-number:parse-real-number
+     (remove #\_ (apply #'concatenate 'string (coerce regs 'list)))
+     :radix radix
+     :float-format 'double-float)))
 
-(defparameter +true-names+
-  (list "true" "True" "TRUE"))
-
-(defparameter +false-names+
-  (list "false" "False" "FALSE"))
-
-(defparameter +integer-scanner+
-  (ppcre:create-scanner "^([-+]?[0-9]+)$"))
-
-(defparameter +octal-integer-scanner+
-  (ppcre:create-scanner "^0o([0-7]+)$"))
-
-(defparameter +hex-integer-scanner+
-  (ppcre:create-scanner "^0x([0-9a-fA-F]+)$"))
-
-(defparameter +float-scanner+
-  (ppcre:create-scanner
-   "^[-+]?(\\.[0-9]+|[0-9]+(\\.[0-9]*)?)([eE][-+]?[0-9]+)?$"))
-
-(defparameter +nan-names+
-  (list ".nan" ".NaN" ".NAN"))
-
-(defparameter +positive-infinity-scanner+
-  (ppcre:create-scanner "^[+]?(\\.inf|\\.Inf|\\.INF)$"))
-
-(defparameter +negative-infinity-scanner+
-  (ppcre:create-scanner "^-(\\.inf|\\.Inf|\\.INF)$"))
-
-;;; The actual parser
-
+;;; The actual scalar parser
+(declaim (notinline parse-scalar))
 (defun parse-scalar (string)
   "Parse a YAML scalar string into a Lisp scalar value."
   (cond
@@ -47,30 +29,79 @@
      string)
     ((eql *tag* 'nonspecific)
      string)
+    ((eql *tag* :|tag:yaml.org,2002:bool|)
+     (if (member string (schema-true-names *default-schema*) :test #'equal)
+	 t
+	 (if (member string (schema-false-names *default-schema*) :test #'equal)
+	     nil
+	     (error "Could not parse boolean ~S" string))))
+    ((eql *tag* :|tag:yaml.org,2002:null|)
+     *null*)
+    ((eql *tag* :|tag:yaml.org,2002:int|)
+     (cond
+       ((ppcre:scan (schema-decimal-integer-scanner *default-schema*) string)
+	(yaml-parse-number (schema-decimal-integer-scanner *default-schema*)
+			    string
+			    10))
+       ((ppcre:scan (schema-octal-integer-scanner *default-schema*) string)
+	(yaml-parse-number (schema-octal-integer-scanner *default-schema*)
+			    string
+			    8))
+       ((ppcre:scan (schema-hex-integer-scanner *default-schema*) string)
+	(yaml-parse-number (schema-hex-integer-scanner *default-schema*)
+			    string
+			    16))
+       (t (error "Unable to parse integer ~S" string))))
+    ((eql *tag* :|tag:yaml.org,2002:float|)
+     (cond
+       ((ppcre:scan (schema-float-scanner *default-schema*) string)
+	(float (yaml-parse-number (schema-float-scanner *default-schema*) string 10) 1.0d0))
+       ;; Special floats
+       ((member string (schema-nan-names *default-schema*) :test #'equal)
+	(not-a-number))
+       ((ppcre:scan (schema-positive-infinity-scanner *default-schema*) string)
+	(positive-infinity))
+       ((ppcre:scan (schema-negative-infinity-scanner *default-schema*) string)
+	(negative-infinity))
+       ;; Integers as floats
+       ((ppcre:scan (schema-decimal-integer-scanner *default-schema*) string)
+	(float (yaml-parse-number (schema-decimal-integer-scanner *default-schema*) string 10)) 1.0d0)
+       ((ppcre:scan (schema-octal-integer-scanner *default-schema*) string)
+	(float (yaml-parse-number (schema-octal-integer-scanner *default-schema*) string 8)) 1.0d0)
+       ((ppcre:scan (schema-hex-integer-scanner *default-schema*) string)
+	(float (yaml-parse-number (schema-hex-integer-scanner *default-schema*) string 16)) 1.0d0)
+       (t (error "Unable to parse floating point number ~S" string))))
+    ((unless (member *tag* '(:!? nil))
+       (warn "Unknown tag ~A" *tag*)
+       nil))
+    ;; At this point it's not a tag we know about, so use schema to detect
     ;; Null
-    ((member string +null-names+ :test #'equal)
+    ((member string (schema-null-names *default-schema*) :test #'equal)
      *null*)
     ;; Truth and falsehood
-    ((member string +true-names+ :test #'equal)
+    ((member string (schema-true-names *default-schema*) :test #'equal)
      t)
-    ((member string +false-names+ :test #'equal)
+    ((member string (schema-false-names *default-schema*) :test #'equal)
      *false*)
     ;; Integers
-    ((ppcre:scan +integer-scanner+ string)
-     (parse-integer string))
-    ((ppcre:scan +octal-integer-scanner+ string)
-     (parse-integer (subseq string 2) :radix 8))
-    ((ppcre:scan +hex-integer-scanner+ string)
-     (parse-integer (subseq string 2) :radix 16))
+    ((ppcre:scan (schema-decimal-integer-scanner *default-schema*) string)
+     (yaml-parse-number (schema-decimal-integer-scanner *default-schema*)
+			string 10))
+    ((ppcre:scan (schema-octal-integer-scanner *default-schema*) string)
+     (yaml-parse-number (schema-octal-integer-scanner *default-schema*)
+			string 8))
+    ((ppcre:scan (schema-hex-integer-scanner *default-schema*) string)
+     (yaml-parse-number (schema-hex-integer-scanner *default-schema*)
+			string 16))
     ;; Floating-point numbers
-    ((ppcre:scan +float-scanner+ string)
-     (parse-number:parse-real-number string))
+    ((ppcre:scan (schema-float-scanner *default-schema*) string)
+     (yaml-parse-number (schema-float-scanner *default-schema*) string 10))
     ;; Special floats
-    ((member string +nan-names+ :test #'equal)
+    ((member string (schema-nan-names *default-schema*) :test #'equal)
      (not-a-number))
-    ((ppcre:scan +positive-infinity-scanner+ string)
+    ((ppcre:scan (schema-positive-infinity-scanner *default-schema*) string)
      (positive-infinity))
-    ((ppcre:scan +negative-infinity-scanner+ string)
+    ((ppcre:scan (schema-negative-infinity-scanner *default-schema*) string)
      (negative-infinity))
     ;; Just a string
     (t

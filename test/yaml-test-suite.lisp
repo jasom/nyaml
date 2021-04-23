@@ -19,7 +19,8 @@
 			     (with-open-file (f ,json)
 			      (loop for x = (handler-case
 						(let ((yason:*parse-json-arrays-as-vectors* t)
-						      (yason:*parse-json-null-as-keyword* t))
+						      (yason:*parse-json-null-as-keyword* t)
+						      (*read-default-float-format* 'double-float))
 						  (yason:parse f))
 					      (end-of-file () 'eof))
 				    until (eql x 'eof) collect x))

@@ -23,3 +23,8 @@
 (defparameter *anchors* nil)
 
 (defparameter *tag-handle* '(("!" . "!") ("!!" . "tag:yaml.org,2002:")))
+   
+
+
+(defparameter *default-schema* +yaml-12-schema+)
+
