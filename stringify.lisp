@@ -1,7 +1,8 @@
 (in-package "NYAML")
 
 ;;; customization
-(defparameter *indent* "  ")
+(defparameter *indent* "  "
+  "The string to use as a single indent.")
 (defparameter *indent-level* 0)
 (defparameter *current-indent* "")
 (defparameter *newline*
@@ -10,13 +11,15 @@
   #+windows
   (coerce (list (code-char 13)
                 (code-char 10))
-          'string))
+          'string)
+  "The string that separates lines.")
 (defparameter *document-separator*
   (concatenate
    'string
    *newline* *newline*
    "---"
-   *newline* *newline*))
+   *newline* *newline*)
+  "The string to separate yaml documents.")
 
 (defun strjoin (delimiter strings)
   (format nil (concatenate 'string "~{~a~^" delimiter "~}")
@@ -25,6 +28,9 @@
 (defun calculate-current-indent ()
   (strjoin "" (loop :repeat *indent-level*
                     :collect *indent*)))
+
+(defgeneric stringify (yaml)
+  (:documentation "Turn a lisp data structure into a yaml string."))
 
 ;;; special
 ;; not a number
@@ -178,6 +184,7 @@
                                   key (stringify value)))))))
 ;;; dump to file
 (defun dump (yaml path &key if-exists (if-does-not-exist :create))
+  "Stringify a lisp data structure and the resulting yaml string to a file."
   (with-open-file (out path
                        :direction :output
                        :if-exists if-exists
