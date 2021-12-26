@@ -16,7 +16,7 @@
 	       ((uiop:file-exists-p json)
 		(list `(define-test ,name
 			 (is equalp
-			     (with-open-file (f ,json)
+			     (uiop:with-input-file (f ,json)
 			      (loop for x = (handler-case
 						(let ((yason:*parse-json-arrays-as-vectors* t)
 						      (yason:*parse-json-null-as-keyword* t)
