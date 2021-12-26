@@ -4,159 +4,175 @@
 (defparameter *indent* "  "
   "The string to use as a single indent.")
 (defparameter *indent-level* 0)
-(defparameter *current-indent* "")
-(defparameter *newline*
-  #-windows
-  (string (code-char 10))
-  #+windows
-  (coerce (list (code-char 13)
-                (code-char 10))
-          'string)
-  "The string that separates lines.")
+
+
 (defparameter *document-separator*
-  (concatenate
-   'string
-   *newline* *newline*
-   "---"
-   *newline* *newline*)
+  (format nil "~%~%---~%~%")
   "The string to separate yaml documents.")
 
-(defun strjoin (delimiter strings)
-  (format nil (concatenate 'string "~{~a~^" delimiter "~}")
-          strings))
+(defun output-current-indent (stream &optional (offset 0))
+  (loop :repeat (- *indent-level* offset) :do (write-sequence *indent* stream)))
 
-(defun calculate-current-indent ()
-  (strjoin "" (loop :repeat *indent-level*
-                    :collect *indent*)))
+(defun stringify (yaml)
+  (with-output-to-string (s)
+    (output yaml s)))
 
-(defgeneric stringify (yaml)
-  (:documentation "Turn a lisp data structure into a yaml string."))
+(defgeneric output (yaml stream)
+  (:documentation "Output yaml to stream"))
 
 ;;; special
 ;; not a number
-(defmethod stringify ((yaml (eql :nan)))
-  ".nan")
+(defmethod output ((yaml (eql :nan)) stream)
+  (write-sequence ".nan" stream))
 
 #+sbcl
-(defmethod stringify ((yaml (eql *sbcl-nan-value*)))
-  ".nan")
+(defmethod output ((yaml (eql *sbcl-nan-value*)) stream)
+  (write-sequence ".nan" stream))
 
 #+allegro 
-(defmethod stringify ((yaml (eql #.excl:*nan-double*)))
-  ".nan")
+(defmethod output ((yaml (eql #.excl:*nan-double*)) stream)
+  (write-sequence ".nan" stream))
 
 ;; positive infinity
-(defmethod stringify ((yaml (eql :+inf)))
-  "+.inf")
+(defmethod output ((yaml (eql :+inf)) stream)
+  (write-sequence "+.inf" stream))
 
 #+sbcl 
-(defmethod stringify ((yaml (eql sb-ext:double-float-positive-infinity)))
-  "+.inf")
+(defmethod output ((yaml (eql sb-ext:double-float-positive-infinity)) stream)
+  (write-sequence "+.inf" stream))
 
 #+allegro 
-(defmethod stringify ((yaml (eql #.excl:*infinity-double*)))
-  "+.inf")
+(defmethod output ((yaml (eql #.excl:*infinity-double*)) stream)
+  (write-sequence "+.inf"))
 
 ;; negative infinity
-(defmethod stringify ((yaml (eql :-inf)))
-  "-.inf")
+(defmethod output ((yaml (eql :-inf)) stream)
+  (write-sequence "-.inf" stream))
 
 #+sbcl 
-(defmethod stringify ((yaml (eql sb-ext:double-float-negative-infinity)))
-  "-.inf")
+(defmethod output ((yaml (eql sb-ext:double-float-negative-infinity)) stream)
+  (write-sequence "-.inf" stream))
 
 #+allegro 
-(defmethod stringify ((yaml (eql #.excl:*negative-infinity-double*)))
-  "-.inf")
+(defmethod output ((yaml (eql #.excl:*negative-infinity-double*)) stream)
+  (write-sequence "-.inf" stream))
 
 ;; custom
-(defmethod stringify (yaml)
+(defmethod output (yaml stream)
   (cond
-    ((equal *false* yaml) "false")
-    ((equal *null* yaml) "null")
+    ((equal *false* yaml) (write-sequence "false" stream))
+    ((equal *null* yaml) (write-sequence "null" stream))
     (t (error "Can't stringify ~a to yaml" yaml))))
 
 ;;; boolean
-(defmethod stringify ((yaml (eql t)))
-  "true")
+(defmethod output ((yaml (eql t)) stream)
+  (write-sequence "true" stream))
 
 ;;; number
-(defmethod stringify ((yaml integer))
-  (princ-to-string yaml))
+(defmethod output ((yaml integer) stream)
+  (format stream "~D" yaml))
 
-(defmethod stringify ((yaml float))
-  (princ-to-string yaml))
+(defmethod output ((yaml float) stream)
+  (let ((*read-default-float-format* (type-of yaml)))
+    (princ yaml stream)))
 
 ;;; string
-(defmethod stringify ((yaml string))
-  (if (stringp (handler-case
-                   (parse yaml)
-                 (t () nil)))
-      ;; yaml cannot be misinterpreted as another type:
-      ;; quotes not needed
-      yaml
-      ;; single quotes needed
-      (format nil "'~a'"
-              ;; escape single quotes
-              (ppcre:regex-replace-all "'" yaml "''"))))
+(defrule c-unquoted
+    (and
+     (! (character-ranges #\Newline #\" #\\))
+     c-printable)
+  (:lambda (x) (second x)))
+
+(defrule unquoted-chars
+    (* c-unquoted)
+  (:text t))
+
+(defun quote-char (c s)
+  (cond
+    ((eql c #\Newline)
+     (write-sequence "\\n" s))
+    ((eql c #\\)
+     (write-sequence "\\\\" s))
+    ((< (char-code c) 255)
+     (format s "\\x~2,'0x" (char-code c)))
+    ((< (char-code c) 65536)
+     (format s "\\u~4,'0x" (char-code c)))
+    (t
+     (format s "\\U~4,'0x" (char-code c)))))
+
+(defmethod output ((yaml string) stream)
+  (write-char #\" stream)
+  (loop for (some next _) = (multiple-value-list (esrap:parse 'unquoted-chars yaml :junk-allowed t))
+	  then (multiple-value-list (esrap:parse 'unquoted-chars yaml :start next :junk-allowed t))
+	do (write-sequence some stream)
+	while next
+	do (quote-char (char yaml next) stream)
+	   (incf next))
+    (write-char #\" stream))
 
 ;;; sequence
-(defmethod stringify ((yaml array))
-  (strjoin
-   (concatenate 'string *newline* *current-indent*)
-   (let* ((*indent-level* (+ *indent-level* 1))
-          (*current-indent* (calculate-current-indent)))
-     (loop :for yaml :across yaml
-           :collect
-           (format nil "- ~a"
-                   (stringify yaml))))))
+(defmethod output ((yaml array) stream)
+  (if (emptyp yaml)
+      (write-sequence "[]" stream)
+      (let* ((*indent-level* (1+ *indent-level*)))
+	(loop :for yaml :across yaml
+	      :for first = t :then nil
+	      :unless first
+		:do (write-char #\Newline stream)
+		    (output-current-indent stream 1)
+	      :do (write-sequence "- " stream)
+		  (output yaml stream)))))
 
-(defun stringify-documents (yaml)
-  (strjoin
-   *document-separator*
-   (map 'list 'stringify (rest yaml))))
+(defun output-documents (yaml stream)
+  (loop for (item . rest) on (rest yaml)
+	do (write-sequence item stream)
+	when rest
+	  do (write-sequence *document-separator* stream)))
 
-(defun stringify-list (yaml)
-  (strjoin
-   (concatenate 'string *newline* *current-indent*)
-   (let* ((*indent-level* (+ *indent-level* 1))
-          (*current-indent* (calculate-current-indent)))
-     (loop :for yaml :in yaml
-           :collect
-           (format nil "- ~a"
-                   (stringify yaml))))))
+(defun output-list (yaml stream)
+  (let* ((*indent-level* (+ *indent-level* 1)))
+    (loop :for (yaml . rest) :on yaml
+	  :do (write-sequence "- " stream)
+	      (output yaml stream)
+	  :when rest
+	    :do
+	       (write-char #\Newline stream)
+	       (output-current-indent stream 1))))
 
-(defmethod stringify ((yaml cons))
+(defmethod output ((yaml cons) stream)
   (cond
     ;; documents
     ((eq :documents (first yaml))
-     (stringify-documents yaml))
+     (output-documents yaml stream))
     ;; alist
     ((alistp yaml)
-     (stringify-alist yaml))
+     (output-alist yaml stream))
     ;; regular list
-    (t (stringify-list yaml))))
+    (t (output-list yaml stream))))
 
 ;;; mapping
 ;; hash-table
-(defmethod stringify ((yaml hash-table))
+(defmethod output ((yaml hash-table) stream)
   (if (= 0 (hash-table-count yaml))
-      "{}"
-      (strjoin
-       (concatenate 'string *newline* *current-indent*)
-       (let* ((*indent-level* (+ *indent-level* 1))
-              (*current-indent* (calculate-current-indent)))
-         (loop :for key :being :the :hash-keys :of yaml
-                 :using (:hash-value value)
-               :if (typep value '(or (and array (not string))
-                                     cons hash-table))
-                 :collect (format nil "~a:~a~a~a"
-                                  key *newline*
-                                  *current-indent*
-                                  (stringify value))
-               :else
-                 :collect (format nil "~a: ~a"
-                                  key (stringify value)))))))
+      (write-sequence "{}" stream)
+      (let* ((*indent-level* (+ *indent-level* 1)))
+	(loop :for key :being :the :hash-keys :of yaml
+		:using (:hash-value value)
+	      :for first = t then nil
+	      :unless first :do
+		(write-char #\Newline stream)
+		(output-current-indent stream)
+	      :if (typep value '(or (and array (not string))
+				 cons hash-table))
+		:do (output key stream)
+		    (format stream ":~%")
+		    (output-current-indent stream)
+		    (output value stream)
+	      :else
+		:do
+		   (output key stream)
+		   (write-sequence ": " stream)
+		   (output value stream)))))
 
 ;; alist
 (defun alistp (list)
@@ -165,23 +181,27 @@
        (every (lambda (pair) (typep (first pair) 'alexandria:string-designator))
               list)))
 
-(defun stringify-alist (yaml)
+(defun output-alist (yaml stream)
   (if (null yaml)
-      "{}"
-      (strjoin
-       (concatenate 'string *newline* *current-indent*)
-       (let* ((*indent-level* (+ *indent-level* 1))
-              (*current-indent* (calculate-current-indent)))
-         (loop :for (key . value) :in (remove-duplicates  yaml :test 'equal :key 'first)
-               :if (typep value '(or (and array (not string))
-                                     cons hash-table))
-                 :collect (format nil "~a:~a~a~a"
-                                  key *newline*
-                                  *current-indent*
-                                  (stringify value))
-               :else
-                 :collect (format nil "~a: ~a"
-                                  key (stringify value)))))))
+      (write-sequence "{}" stream)
+      (let* ((*indent-level* (+ *indent-level* 1)))
+	(loop :for (key . value) :in (remove-duplicates  yaml :test 'equal :key #'car)
+	      :for first = t :then nil
+	      :unless first :do
+		(output-current-indent stream)
+		(write-char #\Newline stream)
+	      :if (typep value '(or (and array (not string))
+				 cons hash-table))
+		:do
+		   (output key stream)
+		   (format stream ":~%")
+		   (output-current-indent stream)
+		   (output value stream)
+	      :else
+		:do (output key stream)
+		    (write-sequence ": " stream)
+		    (output value stream)))))
+
 ;;; dump to file
 (defun dump (yaml path &key if-exists (if-does-not-exist :create))
   "Stringify a lisp data structure and the resulting yaml string to a file."
@@ -189,4 +209,4 @@
                        :direction :output
                        :if-exists if-exists
                        :if-does-not-exist if-does-not-exist)
-    (write-sequence (stringify yaml) out)))
+    (output yaml out)))
