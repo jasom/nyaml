@@ -14,7 +14,7 @@ then parse what's left as an integer in the RADIX"
   (multiple-value-bind (match regs)
       (ppcre:scan-to-strings scanner string)
     (declare (ignore match))
-    (print regs)
+    #+(or)(print regs)
     (parse-number:parse-real-number
      (remove #\_ (apply #'concatenate 'string (coerce regs 'list)))
      :radix radix
