@@ -467,6 +467,7 @@
   (defun start-of-line (input position end)
     (declare (ignore end))
     (if (or (= position 0)
+            (and (= position 1) (char= (elt input 0) (code-char #xFEFF))) ;ignore BOM at start
 	    (char= (elt input (1- position)) #\Newline)
 	    (char= (elt input (1- position)) #\Return))
 	(values "" position t)
