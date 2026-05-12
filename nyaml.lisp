@@ -354,7 +354,7 @@
 (define-parameterized-rule s-indent (n)
   (if (non-negative-integer-p n)
        `(and ,@(loop repeat n collect 's-space))
-       `(or))
+       `(and))
  (:text t))
 
 ;; rule 64
