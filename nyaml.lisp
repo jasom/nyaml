@@ -1204,8 +1204,14 @@
 		(declare (ignore c))
 		(append a b)))
 
+(defun start-of-input (input position end)
+  (declare (ignorable input end))
+  (if (= position 0)
+      (values "" position t)
+      (values nil position)))
+
 ;; rule 163
-(defrule indent-level-helper (and b-break (* s-space) (! b-break)))
+(defrule indent-level-helper (and (or b-break (function start-of-input)) (* s-space) (! b-break)))
 
 (defun detect-indentation-level (n input start end)
   (let ((result (c-indentation-indicator input start end n)))
