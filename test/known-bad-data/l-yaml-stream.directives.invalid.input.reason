@@ -1,0 +1,4 @@
+This is a valid YAML stream.
+
+The *semantics* are probably unintended, but you can always start a new yaml
+document with a line containing just "---"

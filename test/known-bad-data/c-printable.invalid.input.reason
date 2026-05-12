@@ -1,0 +1,12 @@
+The character is in the BMP, so should be *valid* not invalid:
+
+Byte number 1 is decimal 195, hex 0xC3, octal \303, binary 11000011
+This is the first byte of a 2 byte sequence.
+
+Byte number 2 is decimal 191, hex 0xBF, octal \277, binary 10111111
+This is continuation byte 1, expecting 0 more.
+
+U+00FF	LATIN SMALL LETTER Y WITH DIAERESIS
+	* French, medieval Hungarian orthography
+	* uppercase is 0178
+	: 0079 0308

@@ -176,7 +176,7 @@
 (defrule ns-esc-backspace #\b (:constant (code-char #x8)))
 
 ;; rule 45
-(defrule ns-esc-horizontal-tab #\t (:constant (code-char #x9)))
+(defrule ns-esc-horizontal-tab (or #.(code-char #x9) #\t) (:constant (code-char #x9)))
 
 (defrule ns-esc-line-feed #\n (:constant (code-char #xa)))
 
@@ -354,7 +354,7 @@
 (define-parameterized-rule s-indent (n)
   (if (non-negative-integer-p n)
        `(and ,@(loop repeat n collect 's-space))
-       `(and))
+       `(or))
  (:text t))
 
 ;; rule 64

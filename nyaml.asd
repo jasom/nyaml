@@ -31,5 +31,5 @@
   :components ((:module "test"
 		:components
 		((:file "test")
-		 #+(or)(:file "nyaml-reference")
+		 #-(or)(:file "nyaml-reference")
 		 (:file "yaml-test-suite")))))

@@ -1,0 +1,3 @@
+"#" is an allowed plain char; it cannot be preceeded by a space in
+ns-plain-char(c), but that is both a separate rule and not what the input
+contains

@@ -69,6 +69,7 @@
                 (write-char (elt name 0) s))))))
 
 (defun run-test (pathname)
+  ;;(declare (optimize (debug 3)))
   (let* ((info (split-sequence #\. (unmunge-test-name (pathname-name pathname))))
 	 (invalid
 	  (or
@@ -87,6 +88,7 @@
 		     0 (length input) args)
 	      (alexandria:curry #'esrap:parse
 				(intern (string-upcase (car info)) '#:nyaml)))))
+    ;;(break)
     (cond
       (invalid
        (handler-case

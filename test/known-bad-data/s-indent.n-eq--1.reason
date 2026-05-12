@@ -1,0 +1,9 @@
+The unit tests claim that, for empty string:
+
+s-indent-=(-1) succeeds
+s-indent-<=(-1) fails
+
+<= is a superset of = so this is illogical
+
+I require n spaces for s-indent-=(n) which makes sense to mean and means that
+s-indent-=(-1) will always fail
