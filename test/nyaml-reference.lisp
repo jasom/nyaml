@@ -46,8 +46,30 @@
 		  (char last-line
 		   0))))))
 
+(defun unmunge-test-name (test-name)
+  ;; This conses a lot.
+  (with-output-to-string (s)
+    (loop for name = test-name then (subseq name 1)
+          until (zerop (length name))
+          do
+             (cond
+               ((starts-with-subseq "-eq-" name)
+                (write-char #\= s)
+                (setf name (subseq name 3)))
+               ((starts-with-subseq "-plus-" name)
+                (write-char #\+ s)
+                (setf name (subseq name 5)))
+               ((starts-with-subseq "-lt-" name)
+                (write-char #\< s)
+                (setf name (subseq name 3))) 
+               ((starts-with-subseq "-colon-" name)
+                (write-char #\: s)
+                (setf name (subseq name 6))) 
+               (t
+                (write-char (elt name 0) s))))))
+
 (defun run-test (pathname)
-  (let* ((info (split-sequence #\. (pathname-name pathname)))
+  (let* ((info (split-sequence #\. (unmunge-test-name (pathname-name pathname))))
 	 (invalid
 	  (or
 	   (member "invalid" info :test #'string=)
@@ -82,5 +104,3 @@
        (handler-case
 	   (funcall parse-function input)
 	 (esrap:esrap-parse-error () nil))))))
-  
-
